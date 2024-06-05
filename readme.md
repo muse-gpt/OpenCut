@@ -45,7 +45,7 @@ Feature Pack.
 
 | Stage | Owner |
 |---|---|
-| Authoring | TypeScript DSL (`Film`, `text`, `code`, `counter`, `card`, `shape`, `footnote`, `image`, `video`, `progress`, `bands`, `glow`, `grain`, `path`, `layer`, `instance`); seconds in, frames out |
+| Authoring | TypeScript DSL (`Film`, `text`, `code`, `counter`, `card`, `shape`, `footnote`, `image`, `video`, `progress`, `bands`, `glow`, `grain`, `path`, `chart`, `layer`, `instance`); seconds in, frames out |
 | IR | neutral `media.scene` — one serializable `Project`; no other input shape exists |
 | Motion | neutral `media.motion` — `id`, `anim` keys, `follow`, time windows |
 | Import | neutral `media.codec` — images through WIC, video frames and audio through a Media Foundation source reader, cached per path |
@@ -159,8 +159,8 @@ film.audio({
 
 Supported: fixed-timeline scenes, node identity and motion, reusable components
 and instances, text/code/counter/card/shape/footnote/progress/bands/glow/grain/
-path items, image and video clips with fit modes, imported audio, semantic color
-tokens with locked overrides, synthesized effects/instruments/grooves/singing,
+path/chart items, image and video clips with fit modes, imported audio, semantic
+color tokens with locked overrides, synthesized effects/instruments/grooves/singing,
 frame preview, interval export, cancellation, MP4 out.
 
 Not yet: scene transitions, multi-track compositing (items paint in list order,

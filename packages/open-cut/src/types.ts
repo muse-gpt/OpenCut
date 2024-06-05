@@ -199,6 +199,29 @@ export type ItemBody =
       }
     | { kind: 'progress'; at: number; dur: number; track?: string | null; fill?: string | null; y?: number | null }
     | {
+          kind: 'chart';
+          at: number;
+          dur: number;
+          /** Plot box center. */
+          x: number;
+          y: number;
+          w: number;
+          h: number;
+          fadeIn?: number;
+          fadeOut?: number;
+          /** Value range mapped onto the box height. */
+          domain?: [number, number];
+          bars?: BarSeries[];
+          lines?: LineSeries[];
+          axis?: string | null;
+          grid?: string | null;
+          yTicks?: YTick[];
+          xLabels?: string[];
+          labelSize?: number;
+          /** Reveal fraction along the category axis, 0..=1. */
+          progress?: number;
+      }
+    | {
           kind: 'path';
           at: number;
           dur: number;
@@ -255,6 +278,27 @@ export type ItemBody =
           fadeOut?: number;
           required?: boolean;
       };
+
+/** One bar series of a chart item. */
+export interface BarSeries {
+    /** Values in category order; negative values grow below the baseline. */
+    values: number[];
+    color: string;
+}
+
+/** One polyline series of a chart item. */
+export interface LineSeries {
+    /** Values in category order. */
+    points: number[];
+    color: string;
+    stroke?: number;
+}
+
+/** One labeled tick on a chart's value axis. */
+export interface YTick {
+    value: number;
+    label: string;
+}
 
 /** A reusable element that instances place by id. */
 export interface Component {

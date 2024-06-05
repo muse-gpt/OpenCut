@@ -10,12 +10,14 @@ import type {
     Animated,
     AudioSpec,
     Background,
+    BarSeries,
     CodeTheme,
     Component,
     DesignSpec,
     FontsSpec,
     Item,
     Keyframe,
+    LineSeries,
     NoteInput,
     PatternInput,
     PostSpec,
@@ -23,6 +25,7 @@ import type {
     SfxInput,
     Track,
     VoiceInput,
+    YTick,
 } from './types.js';
 
 export type Ease =
@@ -654,4 +657,48 @@ export function instance(options: {
 /** The only "timeline" a code-first film shows: a global progress bar. */
 export function progress(options: { at?: number; dur?: number; track?: string; fill?: string; y?: number } = {}): ItemInput {
     return { kind: 'progress', at: options.at ?? 0, track: '#28344e', fill: '#6ea0ff', ...options } as ItemInput;
+}
+
+export interface ChartOptions extends NodeOptions {
+    at?: number;
+    dur?: number;
+    /** Plot box center; `(w, h)` is the box size, all normalized. */
+    x?: number;
+    y?: number;
+    w?: number;
+    h?: number;
+    /** Value range mapped onto the box height. */
+    domain?: [number, number];
+    bars?: BarSeries[];
+    lines?: LineSeries[];
+    axis?: string;
+    grid?: string;
+    yTicks?: YTick[];
+    xLabels?: string[];
+    labelSize?: number;
+    /** Reveal fraction along the category axis, 0..=1. */
+    progress?: number;
+    fadeIn?: number;
+    fadeOut?: number;
+}
+
+/**
+ * A data chart: bar and polyline series inside one plot box. Animate
+ * `progress` through `anim` to reveal the categories left to right.
+ */
+export function chart(options: ChartOptions): ItemInput {
+    return {
+        kind: 'chart',
+        x: 0.5,
+        y: 0.5,
+        w: 0.62,
+        h: 0.5,
+        domain: [0, 1],
+        axis: '#5d6f8c',
+        grid: '#22304c',
+        labelSize: 22,
+        progress: 1,
+        dur: options.dur ?? 6,
+        ...options,
+    } as ItemInput;
 }
