@@ -28,4 +28,7 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: pnpm install
       - run: pnpm run build
-      - run: node packages/open-cut/dist/cli.js verify films/design-tokens.ts --json
+      - run: node packages/open-cut/dist/cli.js render films/design-tokens.ts --out design-tokens.mp4
+      - run: node packages/open-cut/dist/cli.js verify films/design-tokens.ts --out design-tokens.mp4 --json
+      - run: node packages/open-cut/dist/cli.js render films/chart-demo.ts --out chart-demo.mp4
+      - run: node packages/open-cut/dist/cli.js verify films/chart-demo.ts --out chart-demo.mp4 --json
