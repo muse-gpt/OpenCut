@@ -218,8 +218,37 @@ export type ItemBody =
           yTicks?: YTick[];
           xLabels?: string[];
           labelSize?: number;
+          /** Paint each bar's value above it. */
+          valueLabels?: boolean;
+          /** Fixed decimals for value labels; omit to trim trailing zeros. */
+          valueDecimals?: number;
           /** Reveal fraction along the category axis, 0..=1. */
           progress?: number;
+      }
+    | {
+          kind: 'callout';
+          at: number;
+          dur: number;
+          /** Anchor point the leader starts from, normalized. */
+          ax: number;
+          ay: number;
+          /** Label box center, normalized. */
+          x: number;
+          y: number;
+          text: string;
+          note?: string | null;
+          size?: number;
+          /** Leader, dot and default text color. */
+          color?: string | null;
+          /** Label text color; defaults to `color`, then a neutral ink. */
+          textColor?: string | null;
+          /** Label background panel; omit to paint bare text. */
+          panel?: string | null;
+          /** `true` bends the leader with an elbow, `false` draws it straight. */
+          elbow?: boolean;
+          progress?: number;
+          fadeIn?: number;
+          fadeOut?: number;
       }
     | {
           kind: 'path';

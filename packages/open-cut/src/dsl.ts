@@ -676,6 +676,10 @@ export interface ChartOptions extends NodeOptions {
     yTicks?: YTick[];
     xLabels?: string[];
     labelSize?: number;
+    /** Paint each bar's value above it. */
+    valueLabels?: boolean;
+    /** Fixed decimals for value labels; omit to trim trailing zeros. */
+    valueDecimals?: number;
     /** Reveal fraction along the category axis, 0..=1. */
     progress?: number;
     fadeIn?: number;
@@ -701,4 +705,40 @@ export function chart(options: ChartOptions): ItemInput {
         dur: options.dur ?? 6,
         ...options,
     } as ItemInput;
+}
+
+export interface CalloutOptions extends NodeOptions {
+    at?: number;
+    dur?: number;
+    /** Anchor point the leader starts from, normalized. */
+    ax: number;
+    ay: number;
+    /** Label box center, normalized. */
+    x: number;
+    y: number;
+    /** Primary label line. */
+    text: string;
+    /** Secondary line painted under `text`. */
+    note?: string;
+    size?: number;
+    /** Leader, dot and default text color. */
+    color?: string;
+    /** Label text color; defaults to `color`, then a neutral ink. */
+    textColor?: string;
+    /** Label background panel; omit to paint bare text. */
+    panel?: string;
+    /** `true` bends the leader with an elbow, `false` draws it straight. */
+    elbow?: boolean;
+    /** Reveal fraction; the leader draws first, then the label fades in. */
+    progress?: number;
+    fadeIn?: number;
+    fadeOut?: number;
+}
+
+/**
+ * An annotation: a leader line from an anchor point to a label box. Animate
+ * `progress` to draw the leader and its dot first, then fade the label in.
+ */
+export function callout(options: CalloutOptions): ItemInput {
+    return { kind: 'callout', size: 26, elbow: true, progress: 1, dur: options.dur ?? 4, ...options } as ItemInput;
 }
