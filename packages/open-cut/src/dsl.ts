@@ -49,6 +49,12 @@ export interface FilmOptions {
     fonts?: FontsSpec;
     /** Project-level semantic color card. */
     design?: DesignSpec;
+    /**
+     * Extra raster resolution rendered before the frame is downsampled,
+     * `1..=2`. Camera moves already supersample the world; this asks for the
+     * same treatment in a film that does not move the camera.
+     */
+    supersample?: number;
 }
 
 interface TimedInput {
@@ -170,6 +176,7 @@ export class Film {
     private readonly post: PostSpec;
     private readonly fonts: FontsSpec | null;
     private designSpec: DesignSpec | null;
+    private readonly supersample: number | undefined;
     private readonly sceneList: SceneInput[] = [];
     private readonly componentList: ComponentInput[] = [];
     private audioSpec: AudioSpec | null = null;
@@ -182,6 +189,7 @@ export class Film {
         this.post = options.post ?? {};
         this.fonts = options.fonts ?? null;
         this.designSpec = options.design ?? null;
+        this.supersample = options.supersample;
     }
 
     /** Declares semantic colors. Any color field may then use `$role`;
@@ -317,6 +325,7 @@ export class Film {
             post: this.post,
             fonts: this.fonts,
             design: this.designSpec ?? undefined,
+            supersample: this.supersample,
         };
     }
 
