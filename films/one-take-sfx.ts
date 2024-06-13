@@ -134,7 +134,7 @@ film.scene({
             zoomTo: 1.45,
             edge: 0.10,
             items: [
-                shape({ at: 0, dur: 4.6, shape: 'rect', x: -0.1, y: -0.1, w: 1.2, h: 1.2, color: '#05070f', fadeIn: 0.2 }),
+                shape({ at: 0, dur: 4.6, shape: 'rect', x: 0.5, y: 0.48, w: 1.2, h: 1.2, color: '#05070f', fadeIn: 0.2 }),
                 shape({ at: 0, dur: 4.6, shape: 'line', x: 0.14, y: 0.30, w: 0.72, h: 0, color: '#e8b86d', stroke: 2, progress: 1, fadeIn: 0.7 }),
                 code({
                     at: 0.9,

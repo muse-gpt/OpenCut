@@ -443,15 +443,17 @@ export interface PatternTrackSpec {
     pan?: number;
 }
 
-/** One drum groove: a shipped preset or custom tracks. */
-export interface PatternSpec {
+/**
+ * One drum groove: a shipped preset or custom tracks, never neither. The
+ * union is what turns "forgot to say which groove" into a compile error
+ * instead of a render-time rejection.
+ */
+export type PatternSpec = {
     at: number;
-    preset?: string;
     bpm?: number;
     bars?: number;
-    tracks?: PatternTrackSpec[];
     volume?: number;
-}
+} & ({ preset: string; tracks?: never } | { tracks: PatternTrackSpec[]; preset?: never });
 
 /** Note input in the authoring surface (`at` in seconds). */
 export type NoteInput = NoteSpec;

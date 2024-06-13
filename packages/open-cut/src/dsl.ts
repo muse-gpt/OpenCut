@@ -481,9 +481,8 @@ export interface ShapeOptions extends NodeOptions {
     at?: number;
     dur?: number;
     /**
-     * `rect` anchors at its top-left corner in `(x, y)`, which lets a block be
-     * placed by its edge. `circle`, `ring` and `line` anchor at their centre
-     * like every other item. A line runs from `(x, y)` along `(w, h)`.
+     * Every shape anchors at its centre in `(x, y)`, like the other items.
+     * A line runs from `(x, y)` along `(w, h)`; `rect` is centred on the point.
      */
     shape: 'rect' | 'circle' | 'ring' | 'line';
     x: number;

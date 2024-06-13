@@ -135,7 +135,7 @@ film.scene({
             items: [
                 // The scrim arrives with the layer, so the landscape is already
                 // dark by the time type is legible on top of it.
-                shape({ at: 0, dur: 4.6, shape: 'rect', x: -0.1, y: -0.1, w: 1.2, h: 1.2, color: '#05070f', fadeIn: 0.2 }),
+                shape({ at: 0, dur: 4.6, shape: 'rect', x: 0.5, y: 0.48, w: 1.2, h: 1.2, color: '#05070f', fadeIn: 0.2 }),
                 shape({
                     at: 0,
                     dur: 4.6,
