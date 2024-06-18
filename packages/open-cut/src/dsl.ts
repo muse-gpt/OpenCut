@@ -482,7 +482,8 @@ export interface ShapeOptions extends NodeOptions {
     dur?: number;
     /**
      * Every shape anchors at its centre in `(x, y)`, like the other items.
-     * A line runs from `(x, y)` along `(w, h)`; `rect` is centred on the point.
+     * `rect`, `circle` and `ring` fill a centred `w` × `h` box, so a radial
+     * shape with `w != h` is an ellipse. A line runs from `(x, y)` along `(w, h)`.
      */
     shape: 'rect' | 'circle' | 'ring' | 'line';
     x: number;
@@ -500,7 +501,13 @@ export interface ShapeOptions extends NodeOptions {
 }
 
 export function shape(options: ShapeOptions): ItemInput {
-    return { kind: 'shape', w: 0.1, h: 0.01, color: '#6ea0ff', dur: options.dur ?? 3, ...options } as ItemInput;
+    // Radial shapes fill their `w` × `h` box, so an omitted height must mirror
+    // the width instead of inheriting the line's hairline default and collapsing
+    // the ellipse to a sliver.
+    const radial = options.shape === 'circle' || options.shape === 'ring';
+    const w = options.w ?? 0.1;
+    const h = options.h ?? (radial ? w : 0.01);
+    return { kind: 'shape', color: '#6ea0ff', dur: options.dur ?? 3, ...options, w, h } as ItemInput;
 }
 
 /** Soft diagonal light bands; `alpha` is the peak opacity of each band. */
