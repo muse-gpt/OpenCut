@@ -109,6 +109,44 @@ fn preview_frame(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// Validate a production book and report every problem at once.
+///
+/// Argument: `{ production }`, the JSON of a `media.scene::Production`: the
+/// render project plus shots, panels, cues, assets, tasks and delivery
+/// targets. Returns `{ ok, problems, counts }`. Problems are referenced by the
+/// handle the author wrote, so a review page can point at the broken shot or
+/// cue instead of a joined message. Parsing failures are reported as
+/// `invalid_input`; a structurally valid book with broken references returns
+/// `ok: false` and the list.
+#[function(js_name = "validateProduction")]
+fn validate_production(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("validateProduction requires an options object"))?;
+    let raw = arg.get_named("production")?.as_string()?;
+    let production: media::scene::Production =
+        serde_json::from_str(&raw).map_err(|error| Error::new(format!("invalid_input: {error}")))?;
+    let problems = production.problems();
+    let panels: usize = production.shots.iter().map(|shot| shot.panels.len()).sum();
+    json_to_js(
+        ctx.env(),
+        &json!({
+            "ok": problems.is_empty(),
+            "problems": problems,
+            "counts": {
+                "shots": production.shots.len(),
+                "panels": panels,
+                "cues": production.cues.len(),
+                "assets": production.assets.len(),
+                "tasks": production.tasks.len(),
+                "delivery": production.delivery.len(),
+            },
+        }),
+    )
+}
+
 fn optional_u32(arg: JsValue, name: &str) -> Result<Option<u32>> {
     let value = arg.get_named(name)?;
     if value.is_undefined()? {
@@ -188,4 +226,4 @@ fn json_to_js(env: Env, value: &serde_json::Value) -> Result<JsValue> {
     }
 }
 
-register_module![version, build, render_project, preview_frame];
+register_module![version, build, render_project, preview_frame, validate_production];

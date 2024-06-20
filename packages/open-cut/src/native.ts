@@ -100,11 +100,36 @@ export interface PreviewResult {
     projectHash: string;
 }
 
+/** Entity counts in a production book, as the core sees them. */
+export interface ProductionCounts {
+    shots: number;
+    /** Panels summed across every shot. */
+    panels: number;
+    cues: number;
+    assets: number;
+    tasks: number;
+    delivery: number;
+}
+
+/**
+ * Result of validating a production book.
+ *
+ * `problems` is empty exactly when `ok` is true. Each entry names the handle
+ * the author wrote, so a review page can point at the broken shot or cue
+ * rather than showing one joined message.
+ */
+export interface ProductionReport {
+    ok: boolean;
+    problems: string[];
+    counts: ProductionCounts;
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
     renderProject(options: { project: string; out: string } & RenderOptions): RenderResult;
     previewFrame(options: { project: string; frame: number; out: string }): PreviewResult;
+    validateProduction(options: { production: string }): ProductionReport;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';

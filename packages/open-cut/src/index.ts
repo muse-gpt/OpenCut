@@ -6,6 +6,9 @@
  */
 export { Film, anim, bands, callout, card, chart, code, colorToken, counter, footnote, glow, grain, image, instance, layer, path, progress, shape, text, video } from './dsl.js';
 export type {
+    AssetInput,
+    AssetKind,
+    AssetSource,
     CameraInput,
     CalloutOptions,
     CardOptions,
@@ -13,18 +16,35 @@ export type {
     CodeOptions,
     ComponentInput,
     CounterOptions,
+    CueInput,
+    CueTiming,
+    DeliveryInput,
     FilmOptions,
     FootnoteOptions,
     GlowOptions,
     ItemInput,
     LayerOptions,
     NodeOptions,
+    PanelInput,
     PathOptions,
+    ProductionInput,
     SceneInput,
     ShapeOptions,
+    ShotInput,
+    TaskInput,
     TextOptions,
 } from './dsl.js';
-export type { AssetFingerprint, AudioLevel, BuildInfo, PreviewResult, RenderOptions, RenderResult, SceneSpan } from './native.js';
+export type {
+    AssetFingerprint,
+    AudioLevel,
+    BuildInfo,
+    PreviewResult,
+    ProductionCounts,
+    ProductionReport,
+    RenderOptions,
+    RenderResult,
+    SceneSpan,
+} from './native.js';
 export { native } from './native.js';
 export type { RenderCheck } from './verify.js';
 export { verifyRender } from './verify.js';

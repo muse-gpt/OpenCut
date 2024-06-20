@@ -5,7 +5,7 @@
  * compiled artifact.
  */
 import { native } from './native.js';
-import type { PreviewResult, RenderOptions, RenderResult } from './native.js';
+import type { PreviewResult, ProductionReport, RenderOptions, RenderResult } from './native.js';
 import type {
     Animated,
     AudioSpec,
@@ -181,6 +181,7 @@ export class Film {
     private readonly componentList: ComponentInput[] = [];
     private audioSpec: AudioSpec | null = null;
     private cameraKeys: Array<{ at: number; zoom: number; focus: [number, number]; rotate: number; ease: Ease }> = [];
+    private productionSpec: ProductionInput = {};
 
     constructor(options: FilmOptions = {}) {
         this.width = options.width ?? 1920;
@@ -327,6 +328,31 @@ export class Film {
             design: this.designSpec ?? undefined,
             supersample: this.supersample,
         };
+    }
+
+    /** Attaches the production book: shots, panels, cues, assets, tasks and
+     *  delivery targets that reference this film's scenes.
+     *
+     *  This is not a second project file: the same `Film` still compiles the
+     *  render project, and the book rides along with it. Merging only replaces
+     *  the lists that are passed, so a film can declare shots and cues in
+     *  separate calls. */
+    production(input: ProductionInput): this {
+        this.productionSpec = { ...this.productionSpec, ...input };
+        return this;
+    }
+
+    /** The production book as wire data: the compiled project plus metadata. */
+    toProduction(): Record<string, unknown> {
+        return { project: this.toProject(), ...this.productionSpec };
+    }
+
+    /** Validates ids, references, frame ranges and task dependencies.
+     *
+     *  Rendering does not require this call; it is the review gate. Every
+     *  problem is returned at once, each naming the handle the author wrote. */
+    validateProduction(): ProductionReport {
+        return native.validateProduction({ production: JSON.stringify(toWire(this.toProduction())) });
     }
 
     /** Renders one frame into a PNG.
@@ -508,6 +534,90 @@ export function shape(options: ShapeOptions): ItemInput {
     const w = options.w ?? 0.1;
     const h = options.h ?? (radial ? w : 0.01);
     return { kind: 'shape', color: '#6ea0ff', dur: options.dur ?? 3, ...options, w, h } as ItemInput;
+}
+
+/** What a referenced file is. */
+export type AssetKind = 'image' | 'video' | 'audio' | 'font' | 'model' | 'document';
+
+/** Where a referenced file came from. */
+export type AssetSource =
+    | { kind: 'file' }
+    | { kind: 'recorded' }
+    | { kind: 'generated'; engine: string }
+    | { kind: 'remote'; service: string };
+
+/** One file the work references; `path` must stay inside the production root. */
+export interface AssetInput {
+    id: string;
+    /** Relative path; absolute paths and `..` escapes are rejected. */
+    path: string;
+    kind: AssetKind;
+    /** Content digest recorded when the asset entered the work. */
+    digest: string;
+    source: AssetSource;
+}
+
+/** How a cue's frame range was obtained. */
+export type CueTiming = { kind: 'estimated' } | { kind: 'measured'; source: string } | { kind: 'manual'; basis: string };
+
+/** One storyboard panel. `range` is a half-open frame range inside the shot. */
+export interface PanelInput {
+    id: string;
+    range: [number, number];
+    purpose: string;
+    composition: string;
+    dialogue?: string;
+    notes?: string[];
+}
+
+/** One shot: a scene plus its panels. `scene` must match a `SceneInput.id`. */
+export interface ShotInput {
+    id: string;
+    scene: string;
+    /** A locked shot keeps its content across local revisions. */
+    locked?: boolean;
+    panels?: PanelInput[];
+}
+
+/** One subtitle cue. `range` is a half-open frame range inside the shot. */
+export interface CueInput {
+    id: string;
+    shot: string;
+    range: [number, number];
+    text: string;
+    speaker?: string;
+    timing: CueTiming;
+}
+
+/** One resumable task. Cache validity compares the fingerprints, not files. */
+export interface TaskInput {
+    id: string;
+    /** Capability it exercises, e.g. `media.render`. */
+    capability: string;
+    /** Fingerprint of the exact inputs; empty is rejected. */
+    input: string;
+    /** Fingerprint of the processing configuration. */
+    config: string;
+    deps?: string[];
+    outputs?: string[];
+}
+
+/** One delivery target. An encoder that cannot produce `video`/`audio` must fail. */
+export interface DeliveryInput {
+    name: string;
+    container: string;
+    video?: string;
+    audio?: string;
+    subtitle?: string;
+}
+
+/** The production book attached to a film. */
+export interface ProductionInput {
+    assets?: AssetInput[];
+    shots?: ShotInput[];
+    cues?: CueInput[];
+    tasks?: TaskInput[];
+    delivery?: DeliveryInput[];
 }
 
 /** Soft diagonal light bands; `alpha` is the peak opacity of each band. */

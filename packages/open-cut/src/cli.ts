@@ -5,6 +5,7 @@
  * Usage:
  *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--json]
  *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
+ *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --from s --to s --out dir [--json]
@@ -53,7 +54,7 @@ const args = process.argv.slice(2);
 const command = args[0];
 
 if (command === 'version' || command === undefined) {
-    console.log(command === undefined ? 'usage: open-cut render <film> [--out file.mp4] | open-cut verify <film> --out file.mp4 | open-cut preview <film> --frame N --out file.png | open-cut build | open-cut version' : nativeVersion());
+    console.log(command === undefined ? 'usage: open-cut render <film> [--out file.mp4] | open-cut verify <film> --out file.mp4 | open-cut validate <film> | open-cut preview <film> --frame N --out file.png | open-cut build | open-cut version' : nativeVersion());
     process.exit(command === undefined ? 2 : 0);
 }
 
@@ -136,6 +137,36 @@ if (command === 'preview') {
         fail(error instanceof Error ? error.message : String(error), 1);
     }
     process.exit(0);
+}
+
+if (command === 'validate') {
+    const script = args[1];
+    if (!script) {
+        fail('validate requires a film script path', 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    let report: ReturnType<Film['validateProduction']>;
+    try {
+        report = film.validateProduction();
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    if (args.includes('--json')) {
+        console.log(JSON.stringify(report, null, 2));
+    }
+    else {
+        for (const problem of report.problems) {
+            console.log(`FAIL ${problem}`);
+        }
+        const { shots, panels, cues, assets, tasks, delivery } = report.counts;
+        console.log(`${report.ok ? 'ok' : 'FAIL'}: ${shots} shots, ${panels} panels, ${cues} cues, ${assets} assets, ${tasks} tasks, ${delivery} delivery`);
+    }
+    process.exit(report.ok ? 0 : 1);
 }
 
 if (command === 'verify') {
