@@ -5,7 +5,7 @@
  * compiled artifact.
  */
 import { native } from './native.js';
-import type { PreviewResult, ProductionReport, RenderOptions, RenderResult } from './native.js';
+import type { PreviewResult, ProductionReport, RenderOptions, RenderResult, TaskPlan } from './native.js';
 import type {
     Animated,
     AudioSpec,
@@ -355,6 +355,15 @@ export class Film {
         return native.validateProduction({ production: JSON.stringify(toWire(this.toProduction())) });
     }
 
+    /** Which declared tasks still have to run, given their latest attempts.
+     *
+     *  `run` lists tasks whose fingerprints changed or that never succeeded,
+     *  `fresh` lists tasks whose latest attempt is still current, and
+     *  `problems` is the validation list so a host can refuse to start. */
+    planTasks(): TaskPlan {
+        return native.planTasks({ production: JSON.stringify(toWire(this.toProduction())) });
+    }
+
     /** Renders one frame into a PNG.
      *
      * The preview runs the same contract checks and painter as an export, so a
@@ -611,12 +620,31 @@ export interface DeliveryInput {
     subtitle?: string;
 }
 
+/** How one task attempt ended. */
+export type TaskStatus = 'pending' | 'running' | 'succeeded' | 'failed' | 'cancelled';
+
+/**
+ * One recorded task attempt.
+ *
+ * `outputs` belongs to a `succeeded` run only: a cancelled or failed attempt
+ * published nothing, so it cannot claim artifacts.
+ */
+export interface TaskRunInput {
+    task: string;
+    status: TaskStatus;
+    input: string;
+    config: string;
+    outputs?: string[];
+    failure?: { code: string; message: string };
+}
+
 /** The production book attached to a film. */
 export interface ProductionInput {
     assets?: AssetInput[];
     shots?: ShotInput[];
     cues?: CueInput[];
     tasks?: TaskInput[];
+    runs?: TaskRunInput[];
     delivery?: DeliveryInput[];
 }
 
