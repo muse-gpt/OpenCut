@@ -5,7 +5,16 @@
  * compiled artifact.
  */
 import { native } from './native.js';
-import type { PreviewResult, ProductionReport, RenderOptions, RenderResult, StoryboardOptions, StoryboardPage, TaskPlan } from './native.js';
+import type {
+    CoverCandidate,
+    PreviewResult,
+    ProductionReport,
+    RenderOptions,
+    RenderResult,
+    StoryboardOptions,
+    StoryboardPage,
+    TaskPlan,
+} from './native.js';
 import type {
     Animated,
     AudioSpec,
@@ -386,6 +395,42 @@ export class Film {
             out: outPath,
             ...options,
         });
+    }
+
+    /** Writes a timeline overview: one row per shot, panel ticks, cue strip. */
+    timeline(outPath: string, options: StoryboardOptions = {}): StoryboardPage {
+        return native.writeTimeline({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            ...options,
+        });
+    }
+
+    /** Renders the whole film at reduced resolution for motion review.
+     *
+     *  Timing and audio are unchanged; only the raster scales. `scale` defaults
+     *  to `0.5` and is clamped by the core. */
+    motionPreview(outPath: string, options: { scale?: number } = {}): RenderResult {
+        return native.writeMotionPreview({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            scale: options.scale,
+        });
+    }
+
+    /** Shortlists cover candidates from frames the film shows.
+     *
+     *  Candidates are scored by mean luminance plus contrast and returned
+     *  strongest first; the final pick stays with a human. */
+    coverCandidates(outDir: string, count = 4): CoverCandidate[] {
+        return native.writeCoverCandidates({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outDir,
+            count,
+        }).candidates;
     }
 
     /** Renders one frame into a PNG.

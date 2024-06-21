@@ -174,6 +174,16 @@ export interface StoryboardOptions {
     labelSize?: number;
 }
 
+/** One cover shortlist entry. */
+export interface CoverCandidate {
+    /** Project frame the candidate was taken from. */
+    frame: number;
+    /** Written PNG path. */
+    path: string;
+    /** Shortlist score: mean luminance plus contrast, not an aesthetic rank. */
+    score: number;
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
@@ -184,6 +194,9 @@ export interface NativeBinding {
     assetDigest(options: { path: string }): AssetDigest;
     writeStoryboard(options: { project: string; production: string; out: string } & StoryboardOptions): { pages: StoryboardPage[] };
     writeContactSheet(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
+    writeTimeline(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
+    writeMotionPreview(options: { project: string; production: string; out: string; scale?: number }): RenderResult;
+    writeCoverCandidates(options: { project: string; production: string; out: string; count?: number }): { candidates: CoverCandidate[] };
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';
