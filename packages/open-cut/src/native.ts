@@ -144,6 +144,36 @@ export interface AssetDigest {
     bytes: number;
 }
 
+/** One panel placed on a storyboard page. */
+export interface StoryboardCell {
+    shot: string;
+    panel: string;
+    /** Absolute project frames drawn for this panel. */
+    frames: number[];
+    dialogue: string | null;
+}
+
+/** One written storyboard page or contact sheet. */
+export interface StoryboardPage {
+    index: number;
+    path: string;
+    cells: StoryboardCell[];
+}
+
+/** Page geometry for storyboard output. */
+export interface StoryboardOptions {
+    width?: number;
+    height?: number;
+    /** Panel rows per page; each row is one panel. */
+    rows?: number;
+    /** Contact-sheet columns. */
+    columns?: number;
+    margin?: number;
+    gap?: number;
+    titleSize?: number;
+    labelSize?: number;
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
@@ -152,6 +182,8 @@ export interface NativeBinding {
     validateProduction(options: { production: string }): ProductionReport;
     planTasks(options: { production: string }): TaskPlan;
     assetDigest(options: { path: string }): AssetDigest;
+    writeStoryboard(options: { project: string; production: string; out: string } & StoryboardOptions): { pages: StoryboardPage[] };
+    writeContactSheet(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';

@@ -7,6 +7,7 @@
  *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
+ *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --from s --to s --out dir [--json]
@@ -55,7 +56,7 @@ const args = process.argv.slice(2);
 const command = args[0];
 
 if (command === 'version' || command === undefined) {
-    console.log(command === undefined ? 'usage: open-cut render <film> [--out file.mp4] | open-cut verify <film> --out file.mp4 | open-cut validate <film> | open-cut plan <film> | open-cut preview <film> --frame N --out file.png | open-cut build | open-cut version' : nativeVersion());
+    console.log(command === undefined ? 'usage: open-cut render <film> [--out file.mp4] | open-cut verify <film> --out file.mp4 | open-cut validate <film> | open-cut plan <film> | open-cut storyboard <film> --out dir | open-cut preview <film> --frame N --out file.png | open-cut build | open-cut version' : nativeVersion());
     process.exit(command === undefined ? 2 : 0);
 }
 
@@ -199,6 +200,50 @@ if (command === 'plan') {
     }
     // A broken book cannot be planned; a plan of nothing is still a success.
     process.exit(plan.problems.length === 0 ? 0 : 1);
+}
+
+if (command === 'storyboard') {
+    const script = args[1];
+    if (!script) {
+        fail('storyboard requires a film script path', 2);
+    }
+    const outArg = flag(args, '--out');
+    if (outArg === undefined) {
+        fail('storyboard requires --out <dir>', 2);
+    }
+    const rowsArg = flag(args, '--rows');
+    const rows = rowsArg === undefined ? undefined : Number(rowsArg);
+    if (rows !== undefined && (!Number.isInteger(rows) || rows < 1)) {
+        fail(`--rows must be a positive integer, got ${rowsArg}`, 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    const out = path.resolve(outArg);
+    const options = rows === undefined ? {} : { rows };
+    try {
+        const pages = film.storyboard(out, options);
+        const contact = flag(args, '--contact');
+        const sheet = contact === undefined ? null : film.contactSheet(path.resolve(contact), options);
+        const cells = pages.reduce((sum, page) => sum + page.cells.length, 0);
+        if (args.includes('--json')) {
+            console.log(JSON.stringify({ pages, sheet }, null, 2));
+            process.exit(0);
+        }
+        console.log(`storyboard: ${pages.length} page(s), ${cells} panel row(s) -> ${out}`);
+        for (const page of pages) {
+            console.log(`  ${page.path}: ${page.cells.map((cell) => `${cell.shot}/${cell.panel}`).join(', ')}`);
+        }
+        if (sheet) {
+            console.log(`contact sheet: ${sheet.path}`);
+        }
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    process.exit(0);
 }
 
 if (command === 'verify') {
