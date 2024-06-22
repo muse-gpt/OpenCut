@@ -7,6 +7,7 @@
  *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
+ *   open-cut subtitles <film.mjs|film.ts> --out file.srt [--format srt|vtt] [--max-cps n] [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--scale n] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
@@ -20,7 +21,7 @@
  * that file stops the run without touching the previous output.
  * Exit codes: 0 success, 1 runtime failure, 2 usage error.
  */
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Film } from './dsl.js';
@@ -267,6 +268,47 @@ if (command === 'storyboard') {
     catch (error) {
         fail(error instanceof Error ? error.message : String(error), 1);
     }
+    process.exit(0);
+}
+
+if (command === 'subtitles') {
+    const script = args[1];
+    if (!script) {
+        fail('subtitles requires a film script path', 2);
+    }
+    const outArg = flag(args, '--out');
+    if (outArg === undefined) {
+        fail('subtitles requires --out <file.srt|file.vtt>', 2);
+    }
+    const formatArg = flag(args, '--format') ?? 'srt';
+    if (formatArg !== 'srt' && formatArg !== 'vtt') {
+        fail(`--format must be srt or vtt, got ${formatArg}`, 2);
+    }
+    const maxCpsArg = flag(args, '--max-cps');
+    const maxCps = maxCpsArg === undefined ? undefined : Number(maxCpsArg);
+    if (maxCps !== undefined && (!Number.isFinite(maxCps) || maxCps <= 0)) {
+        fail(`--max-cps must be a positive number, got ${maxCpsArg}`, 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    let result: ReturnType<Film['subtitles']>;
+    try {
+        result = film.subtitles(formatArg, maxCps === undefined ? {} : { maxCps });
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    const out = path.resolve(outArg);
+    mkdirSync(path.dirname(out), { recursive: true });
+    writeFileSync(out, result.text, 'utf8');
+    if (args.includes('--json')) {
+        console.log(JSON.stringify({ ...result, out }, null, 2));
+        process.exit(0);
+    }
+    console.log(`subtitles: ${result.cues} cue(s), ${result.format} -> ${out}`);
     process.exit(0);
 }
 
