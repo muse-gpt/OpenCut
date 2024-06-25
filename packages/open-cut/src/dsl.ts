@@ -381,13 +381,17 @@ export class Film {
      *
      *  Every thumbnail is a frame this film actually renders, and each row
      *  carries first/middle/last frames plus the shot, panel, range and
-     *  dialogue. A book that fails validation throws before writing. */
-    storyboard(outDir: string, options: StoryboardOptions = {}): StoryboardPage[] {
+     *  dialogue. A book that fails validation throws before writing. `only`
+     *  re-renders just the pages containing those panel handles, keeping the
+     *  page numbers the full book would have given them. */
+    storyboard(outDir: string, options: StoryboardOptions & { only?: string[] } = {}): StoryboardPage[] {
+        const { only, ...layout } = options;
         return native.writeStoryboard({
             project: JSON.stringify(toWire(this.toProject())),
             production: JSON.stringify(toWire(this.toProduction())),
             out: outDir,
-            ...options,
+            ...layout,
+            only: only === undefined ? undefined : only.join(','),
         }).pages;
     }
 

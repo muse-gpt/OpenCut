@@ -227,7 +227,7 @@ export interface NativeBinding {
     validateProduction(options: { production: string }): ProductionReport;
     planTasks(options: { production: string }): TaskPlan;
     assetDigest(options: { path: string }): AssetDigest;
-    writeStoryboard(options: { project: string; production: string; out: string } & StoryboardOptions): { pages: StoryboardPage[] };
+    writeStoryboard(options: { project: string; production: string; out: string; only?: string } & StoryboardOptions): { pages: StoryboardPage[] };
     writeContactSheet(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeTimeline(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeMotionPreview(options: { project: string; production: string; out: string; scale?: number }): RenderResult;
