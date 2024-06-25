@@ -9,6 +9,8 @@
  *   open-cut plan <film.mjs|film.ts> [--json]
  *   open-cut subtitles <film.mjs|film.ts> --out file.srt [--format srt|vtt] [--max-cps n] [--json]
  *   open-cut revise <film.mjs|film.ts> --cue id --text "..." [--json]
+ *   open-cut chapters <film.mjs|film.ts> --out file.png [--json]
+ *   open-cut compare <film.mjs|film.ts> --before <film.mjs|film.ts> --out file.png [--only p1,p2] [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
@@ -356,6 +358,70 @@ if (command === 'revise') {
     console.log(`cue ${revision.cue} frames ${revision.range[0]}..${revision.range[1]}`);
     console.log(`affected: shots ${revision.shots.join(', ') || '(none)'} panels ${revision.panels.join(', ') || '(none)'}`);
     process.exit(revision.lines.ok && revision.reading === null ? 0 : 1);
+}
+
+if (command === 'chapters') {
+    const script = args[1];
+    if (!script) {
+        fail('chapters requires a film script path', 2);
+    }
+    const outArg = flag(args, '--out');
+    if (outArg === undefined) {
+        fail('chapters requires --out <file.png>', 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    try {
+        const page = film.chapters(path.resolve(outArg));
+        if (args.includes('--json')) {
+            console.log(JSON.stringify(page, null, 2));
+            process.exit(0);
+        }
+        console.log(`chapters: ${page.cells.length} shot row(s) -> ${page.path}`);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    process.exit(0);
+}
+
+if (command === 'compare') {
+    const script = args[1];
+    if (!script) {
+        fail('compare requires the current film script path', 2);
+    }
+    const beforeArg = flag(args, '--before');
+    const outArg = flag(args, '--out');
+    if (beforeArg === undefined || outArg === undefined) {
+        fail('compare requires --before <film> and --out <file.png>', 2);
+    }
+    const current = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = current.default ?? current.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    const previous = await import(pathToFileURL(path.resolve(beforeArg)).href);
+    const before: unknown = previous.default ?? previous.film;
+    if (!(before instanceof Film)) {
+        fail('the --before module must default-export a Film instance', 2);
+    }
+    const onlyArg = flag(args, '--only');
+    const only = onlyArg === undefined ? undefined : onlyArg.split(',').map((panel) => panel.trim()).filter((panel) => panel.length > 0);
+    try {
+        const page = film.comparison(before.toProject(), path.resolve(outArg), only === undefined ? {} : { only });
+        if (args.includes('--json')) {
+            console.log(JSON.stringify(page, null, 2));
+            process.exit(0);
+        }
+        console.log(`comparison: ${page.panels.join(', ')} -> ${page.path}`);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    process.exit(0);
 }
 
 if (command === 'verify') {
