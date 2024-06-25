@@ -7,6 +7,7 @@
 import { native } from './native.js';
 import type {
     CoverCandidate,
+    CueRevision,
     PreviewResult,
     ProductionReport,
     RenderOptions,
@@ -446,6 +447,20 @@ export class Film {
             project: JSON.stringify(toWire(this.toProject())),
             production: JSON.stringify(toWire(this.toProduction())),
             format,
+            ...style,
+        });
+    }
+
+    /** Recompute one cue after its text changes, without applying the edit.
+     *
+     *  Returns the new lines (or why they do not fit) and the shots and panels
+     *  the cue overlaps, so only those storyboard rows need re-rendering. */
+    reviseCue(cue: string, text: string, style: SubtitleStyle = {}): CueRevision {
+        return native.reviseCue({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            cue,
+            text,
             ...style,
         });
     }

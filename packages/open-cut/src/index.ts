@@ -42,6 +42,7 @@ export type {
     AudioLevel,
     BuildInfo,
     CoverCandidate,
+    CueRevision,
     PreviewResult,
     ProductionCounts,
     ProductionReport,

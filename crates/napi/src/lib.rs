@@ -247,6 +247,56 @@ fn write_contact_sheet(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// Recompute one cue after its text changes, without applying the edit.
+///
+/// Argument: `{ project, production, cue, text, maxChars?, maxLines?,
+/// maxFrames?, maxCps? }`. Returns the new lines or the reason they do not
+/// fit, plus the shots and panels the cue overlaps so a host can re-render only
+/// those storyboard rows.
+#[function(js_name = "reviseCue")]
+fn revise_cue(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("reviseCue requires an options object"))?;
+    let project_json = arg.get_named("project")?.as_string()?;
+    let project: media::scene::Project =
+        serde_json::from_str(&project_json).map_err(|error| Error::new(format!("invalid_input: {error}")))?;
+    let production = parse_production(arg)?;
+    let cue = media::scene::CueId::new(arg.get_named("cue")?.as_string()?).map_err(core_error)?;
+    let text = arg.get_named("text")?.as_string()?;
+    let mut style = media::scene::SubtitleStyle::default();
+    if let Some(value) = optional_u32(arg, "maxChars")? {
+        style.max_chars = value as usize;
+    }
+    if let Some(value) = optional_u32(arg, "maxLines")? {
+        style.max_lines = value as usize;
+    }
+    if let Some(value) = optional_u32(arg, "minFrames")? {
+        style.min_frames = value;
+    }
+    if let Some(value) = optional_f32(arg, "maxCps")? {
+        style.max_cps = value;
+    }
+    let revision = media::scene::revise_cue(&project, &production, &cue, &text, &style).map_err(core_error)?;
+    let lines = match &revision.lines {
+        Ok(lines) => json!({ "ok": true, "lines": lines }),
+        Err(error) => json!({ "ok": false, "error": error }),
+    };
+    json_to_js(
+        ctx.env(),
+        &json!({
+            "cue": revision.cue.as_str(),
+            "range": revision.range,
+            "shots": revision.shots,
+            "panels": revision.panels,
+            "reading": revision.reading,
+            "lines": lines,
+        }),
+    )
+}
+
 /// Export the production's cues as a subtitle file body.
 ///
 /// Argument: `{ project, production, format, maxChars?, maxLines?, minFrames?,
@@ -523,5 +573,6 @@ register_module![
     write_timeline,
     write_motion_preview,
     write_cover_candidates,
-    export_subtitles
+    export_subtitles,
+    revise_cue
 ];
