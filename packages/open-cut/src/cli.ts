@@ -11,6 +11,7 @@
  *   open-cut revise <film.mjs|film.ts> --cue id --text "..." [--json]
  *   open-cut chapters <film.mjs|film.ts> --out file.png [--json]
  *   open-cut compare <film.mjs|film.ts> --before <film.mjs|film.ts> --out file.png [--only p1,p2] [--json]
+ *   open-cut inspect <file.mp4> [--probes n] [--strict] [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
@@ -28,7 +29,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Film } from './dsl.js';
-import { nativeBuild, nativeVersion, verifyRender } from './index.js';
+import { nativeBuild, nativeVersion, inspectDelivery, verifyRender } from './index.js';
 
 function fail(message: string, code: number): never {
     console.error(`open-cut: ${message}`);
@@ -422,6 +423,42 @@ if (command === 'compare') {
         fail(error instanceof Error ? error.message : String(error), 1);
     }
     process.exit(0);
+}
+
+if (command === 'inspect') {
+    const file = args[1];
+    if (!file) {
+        fail('inspect requires a delivered file path', 2);
+    }
+    const probesArg = flag(args, '--probes');
+    const probes = probesArg === undefined ? 8 : Number(probesArg);
+    if (!Number.isInteger(probes) || probes < 2) {
+        fail(`--probes must be an integer of at least 2, got ${probesArg}`, 2);
+    }
+    let report: ReturnType<typeof inspectDelivery>;
+    try {
+        report = inspectDelivery(path.resolve(file), probes);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    if (args.includes('--json')) {
+        console.log(JSON.stringify(report, null, 2));
+        process.exit(args.includes('--strict') && report.suspects.length > 0 ? 1 : 0);
+    }
+    console.log(`inspected ${report.path} [${report.width}x${report.height}]`);
+    for (const sample of report.samples) {
+        console.log(`  f${sample.index} @${sample.seconds.toFixed(2)}s luma ${sample.mean_luma.toFixed(3)}${sample.frozen ? ' (identical to previous)' : ''}`);
+    }
+    if (report.audio) {
+        console.log(
+            `  audio: ${report.audio.seconds.toFixed(2)}s @${report.audio.sample_rate}Hz, peak ${report.audio.peak_db.toFixed(1)} dBFS, rms ${report.audio.rms_db.toFixed(1)} dBFS, clipped ${report.audio.clipped}`,
+        );
+    }
+    for (const suspect of report.suspects) {
+        console.log(`  suspect: ${suspect}`);
+    }
+    process.exit(args.includes('--strict') && report.suspects.length > 0 ? 1 : 0);
 }
 
 if (command === 'verify') {
