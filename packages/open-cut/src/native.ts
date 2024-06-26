@@ -252,6 +252,26 @@ export interface DeliveryReport {
     suspects: string[];
 }
 
+/** One asset as found relative to the archive root. */
+export interface AssetCheck {
+    id: string;
+    path: string;
+    /** Digest recorded in the production. */
+    digest: string;
+    /** Digest read from disk; `null` when the file is absent. */
+    found: string | null;
+}
+
+/** Outcome of checking a production against a directory tree. */
+export interface ArchiveReport {
+    root: string;
+    ok: AssetCheck[];
+    /** Assets whose file is absent. */
+    missing: AssetCheck[];
+    /** Assets whose file no longer matches the recorded digest. */
+    mismatched: AssetCheck[];
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
@@ -270,6 +290,7 @@ export interface NativeBinding {
     exportSubtitles(options: { project: string; production: string; format: SubtitleFormat } & SubtitleStyle): SubtitleExport;
     reviseCue(options: { project: string; production: string; cue: string; text: string } & SubtitleStyle): CueRevision;
     inspectDelivery(options: { path: string; probes?: number }): DeliveryReport;
+    checkArchive(options: { root: string; production: string }): ArchiveReport;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';

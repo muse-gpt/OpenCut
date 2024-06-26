@@ -461,6 +461,39 @@ if (command === 'inspect') {
     process.exit(args.includes('--strict') && report.suspects.length > 0 ? 1 : 0);
 }
 
+if (command === 'archive') {
+    const script = args[1];
+    if (!script) {
+        fail('archive requires a film script path', 2);
+    }
+    const current = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = current.default ?? current.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    const rootArg = flag(args, '--root');
+    const root = rootArg === undefined ? path.dirname(path.resolve(script)) : path.resolve(rootArg);
+    let report: ReturnType<typeof import('./index.js').checkArchive>;
+    try {
+        report = film.archive(root);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    if (args.includes('--json')) {
+        console.log(JSON.stringify(report, null, 2));
+        process.exit(report.missing.length + report.mismatched.length > 0 ? 1 : 0);
+    }
+    console.log(`archive ${report.root}: ${report.ok.length} ok, ${report.missing.length} missing, ${report.mismatched.length} changed`);
+    for (const asset of report.missing) {
+        console.log(`  missing: ${asset.id} -> ${asset.path}`);
+    }
+    for (const asset of report.mismatched) {
+        console.log(`  changed: ${asset.id} -> ${asset.path} (recorded ${asset.digest}, found ${asset.found})`);
+    }
+    process.exit(report.missing.length + report.mismatched.length > 0 ? 1 : 0);
+}
+
 if (command === 'verify') {
     const script = args[1];
     if (!script) {
