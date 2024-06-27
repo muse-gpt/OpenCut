@@ -576,6 +576,12 @@ if (sceneId !== undefined) {
 
 const stats = (() => {
     try {
+        if (args.includes('--burn')) {
+            if (from !== undefined || sceneId !== undefined) {
+                fail('--burn renders the whole film and cannot be combined with --from/--to/--scene', 2);
+            }
+            return film.renderWithSubtitles(out);
+        }
         return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file') });
     }
     catch (error) {
