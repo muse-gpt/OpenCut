@@ -92,10 +92,11 @@ export function assetDigest(path: string): AssetDigest {
  *
  * Frames are sampled at evenly spaced times, so this proves the file decodes
  * there and is not a full frame count. `suspects` is advisory: a dark or held
- * scene is reported, not failed.
+ * scene is reported, not failed. Pass `expectedSeconds` to also compare the
+ * measured length with the length the project declares.
  */
-export function inspectDelivery(path: string, probes = 8): DeliveryReport {
-    return native.inspectDelivery({ path, probes });
+export function inspectDelivery(path: string, probes = 8, expectedSeconds?: number, toleranceSeconds = 0.5): DeliveryReport {
+    return native.inspectDelivery({ path, probes, expectedSeconds, toleranceSeconds });
 }
 
 /**
