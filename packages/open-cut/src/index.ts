@@ -47,6 +47,7 @@ export type {
     CueRevision,
     DeliveryAudio,
     DeliveryReport,
+    FrameLookup,
     PreviewResult,
     ProductionCounts,
     ProductionReport,
