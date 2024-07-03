@@ -542,7 +542,7 @@ if (command === 'inspect') {
     }
     console.log(`inspected ${report.path} [${report.width}x${report.height}]`);
     for (const sample of report.samples) {
-        console.log(`  f${sample.index} @${sample.seconds.toFixed(2)}s luma ${sample.mean_luma.toFixed(3)}${sample.frozen ? ' (identical to previous)' : ''}`);
+        console.log(`  f${sample.index} @${sample.seconds.toFixed(2)}s luma ${sample.mean_luma.toFixed(3)}${sample.frozen ? ' (identical to previous)' : ''}${sample.jump > 0 ? ` jump ${sample.jump.toFixed(2)}` : ''}`);
     }
     if (report.audio) {
         console.log(
