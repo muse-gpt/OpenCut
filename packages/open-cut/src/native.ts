@@ -292,6 +292,7 @@ export interface NativeBinding {
     writeComparison(options: { before: string; project: string; production: string; out: string; only?: string } & StoryboardOptions): { path: string; panels: string[] };
     writeChapters(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeSeams(options: { project: string; production: string; out: string } & StoryboardOptions): { path: string; cuts: number };
+    writeSceneOverview(options: { project: string; production: string; out: string } & StoryboardOptions): { path: string; scenes: number };
     lookupFrame(options: { production: string; frame: number }): FrameLookup;
     writeContactSheet(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeTimeline(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;

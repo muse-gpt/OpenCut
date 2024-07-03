@@ -453,6 +453,19 @@ export class Film {
         });
     }
 
+    /** Writes a scene overview: one establishing frame per scene.
+     *
+     *  Each row names the scene, its absolute frame span, its duration and the
+     *  shots that use it, so the space view is separate from the film view. */
+    sceneOverview(outPath: string, options: StoryboardOptions = {}): { path: string; scenes: number } {
+        return native.writeSceneOverview({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            ...options,
+        });
+    }
+
     /** Looks up the shot, panel and cue covering one absolute frame.
      *
      *  Ranges are shot-local in the book and resolved to absolute frames here,
