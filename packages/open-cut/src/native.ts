@@ -82,6 +82,9 @@ export interface RenderOptions {
     endFrame?: number;
     /** Path polled between frames: creating it cancels the run. */
     cancelFile?: string;
+    /** Required audio codec. A machine that cannot provide it fails instead
+     *  of substituting another codec. */
+    audioCodec?: 'aac' | 'flac';
 }
 
 export interface BuildInfo {

@@ -37,11 +37,13 @@ fn build(ctx: CallContext) -> Result<JsValue> {
 
 /// Render a project JSON string into an MP4 file.
 ///
-/// Argument: `{ project, out, startFrame?, endFrame?, cancelFile? }`. Returns
-/// render statistics. `startFrame`/`endFrame` select a half-open frame range
-/// that is renumbered from zero. `cancelFile` is a path polled between frames:
-/// creating that file stops the run with a `cancelled` error and publishes
-/// nothing, leaving any previous output intact. Rendering is synchronous on
+/// Argument: `{ project, out, startFrame?, endFrame?, cancelFile?, audioCodec? }`.
+/// Returns render statistics. `startFrame`/`endFrame` select a half-open frame
+/// range that is renumbered from zero. `cancelFile` is a path polled between
+/// frames: creating that file stops the run with a `cancelled` error and
+/// publishes nothing, leaving any previous output intact. `audioCodec` names a
+/// required codec (`aac`, `flac`): when the machine cannot provide it the run
+/// fails instead of delivering a different one. Rendering is synchronous on
 /// the calling thread, so cancellation is driven from outside this process.
 #[function(js_name = "renderProject")]
 fn render_project(ctx: CallContext) -> Result<JsValue> {
@@ -71,7 +73,13 @@ fn render_project(ctx: CallContext) -> Result<JsValue> {
             .as_ref()
             .is_some_and(|path| std::path::Path::new(path).exists())
     };
-    let options = RenderOptions { range, cancel: Some(&cancel), ..Default::default() };
+    let audio_codec = optional_string(arg, "audioCodec")?;
+    if let Some(codec) = audio_codec.as_deref() {
+        if codec != "aac" && codec != "flac" {
+            return Err(Error::new(format!("invalid_input: audioCodec `{codec}` is not `aac` or `flac`")));
+        }
+    }
+    let options = RenderOptions { range, cancel: Some(&cancel), audio_codec: audio_codec.as_deref(), ..Default::default() };
     let stats = media::render::render_project_with(&project, path, &options, &mut |done, total| {
         if done == total || done % 30 == 0 {
             println!("opencut: frame {done}/{total}");
@@ -387,9 +395,15 @@ fn render_with_subtitles(ctx: CallContext) -> Result<JsValue> {
     }
     let cues = media::scene::absolute_cues(&parsed_project, &production, &style).map_err(core_error)?;
     media::scene::check_reading(&cues, &style, parsed_project.time_base()).map_err(core_error)?;
+    let audio_codec = optional_string(arg, "audioCodec")?;
+    if let Some(codec) = audio_codec.as_deref() {
+        if codec != "aac" && codec != "flac" {
+            return Err(Error::new(format!("invalid_input: audioCodec `{codec}` is not `aac` or `flac`")));
+        }
+    }
     let burned: Vec<media::render::BurnInCue> =
         cues.iter().map(|cue| media::render::BurnInCue { range: [cue.start, cue.end], lines: cue.lines.clone() }).collect();
-    let options = media::render::RenderOptions { subtitles: Some(&burned), ..Default::default() };
+    let options = media::render::RenderOptions { subtitles: Some(&burned), audio_codec: audio_codec.as_deref(), ..Default::default() };
     let stats = media::render::render_project_with(&project_json, std::path::Path::new(&out), &options, &mut |_, _| {})
         .map_err(core_error)?;
     json_to_js(ctx.env(), &to_json(&stats))
