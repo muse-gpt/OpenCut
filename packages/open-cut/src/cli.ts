@@ -16,7 +16,7 @@
  *   open-cut scenes <film.mjs|film.ts> --out file.png [--json]
  *   open-cut seams <film.mjs|film.ts> --out file.png [--json]
  *   open-cut at <film.mjs|film.ts> --frame N [--json]
- *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--json]
+ *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--page 1600x1200] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --from s --to s --out dir [--json]
@@ -233,7 +233,17 @@ if (command === 'storyboard') {
     const out = path.resolve(outArg);
     const onlyArg = flag(args, '--only');
     const only = onlyArg === undefined ? undefined : onlyArg.split(',').map((panel) => panel.trim()).filter((panel) => panel.length > 0);
-    const layoutOptions = rows === undefined ? {} : { rows };
+    // `--page 1920x1080` renders the same book onto a different sheet size, so
+    // a wide or vertical deliverable is paginated instead of scaled down.
+    const pageArg = flag(args, '--page');
+    const page = pageArg === undefined ? undefined : /^(\d+)x(\d+)$/i.exec(pageArg.trim());
+    if (pageArg !== undefined && page === null) {
+        fail(`--page must be WIDTHxHEIGHT, got ${pageArg}`, 2);
+    }
+    const layoutOptions = {
+        ...(rows === undefined ? {} : { rows }),
+        ...(page === null || page === undefined ? {} : { width: Number(page[1]), height: Number(page[2]) }),
+    };
     const options = { ...layoutOptions, ...(only === undefined ? {} : { only }) };
     try {
         const pages = film.storyboard(out, options);
