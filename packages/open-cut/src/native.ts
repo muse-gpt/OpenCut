@@ -37,8 +37,20 @@ export interface RenderResult {
     scenes: SceneSpan[];
     /** Level of the mixed audio bed; `null` when the film has no audio. */
     audioLevel: AudioLevel | null;
+    /** What the delivery limiter did; `null` when none was requested. */
+    limiter: LimiterStats | null;
     /** Declared optional resources that stayed empty. */
     optionalMissing: string[];
+}
+
+/** Report of one delivery limiter pass. */
+export interface LimiterStats {
+    /** Deepest gain reduction applied, in dB (negative or zero). */
+    max_reduction_db: number;
+    /** Peak of the limited output, in dBFS. */
+    output_peak_db: number;
+    /** Samples that pulled the gain down. */
+    limited: number;
 }
 
 /** Peak, RMS and clipping facts for one mixed audio bed. */
@@ -85,6 +97,8 @@ export interface RenderOptions {
     /** Required audio codec. A machine that cannot provide it fails instead
      *  of substituting another codec. */
     audioCodec?: 'aac' | 'flac';
+    /** Peak ceiling in dBFS applied to the mixed bed before encoding. */
+    limiterCeilingDb?: number;
 }
 
 export interface BuildInfo {

@@ -3,7 +3,7 @@
  * OpenCut CLI — compile a film script into an MP4.
  *
  * Usage:
- *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--audio-codec aac|flac] [--burn] [--json]
+ *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--audio-codec aac|flac] [--limiter-db n] [--burn] [--json]
  *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
@@ -684,6 +684,12 @@ if (audioCodecArg !== undefined && audioCodecArg !== 'aac' && audioCodecArg !== 
 }
 const audioCodec = audioCodecArg as 'aac' | 'flac' | undefined;
 
+const limiterArg = flag(args, '--limiter-db');
+const limiterCeilingDb = limiterArg === undefined ? undefined : Number(limiterArg);
+if (limiterCeilingDb !== undefined && (!Number.isFinite(limiterCeilingDb) || limiterCeilingDb > 0)) {
+    fail(`--limiter-db must be a non-positive dBFS ceiling, got ${limiterArg}`, 2);
+}
+
 const stats = (() => {
     try {
         if (args.includes('--burn')) {
@@ -692,7 +698,7 @@ const stats = (() => {
             }
             return film.renderWithSubtitles(out);
         }
-        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec });
+        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec, limiterCeilingDb });
     }
     catch (error) {
         // The core reports stable codes (`cancelled`, `media`, `invalid_scene`, …);
@@ -714,6 +720,11 @@ if (stats.audioLevel) {
     console.log(
         `audio level: peak ${stats.audioLevel.peakDbfs.toFixed(1)} dBFS, rms ${stats.audioLevel.rmsDbfs.toFixed(1)} dBFS` +
             (stats.audioLevel.clipped > 0 ? `, clipped ${stats.audioLevel.clipped}` : ''),
+    );
+}
+if (stats.limiter) {
+    console.log(
+        `limiter: peak ${stats.limiter.output_peak_db.toFixed(1)} dBFS, reduction ${stats.limiter.max_reduction_db.toFixed(1)} dB on ${stats.limiter.limited} sample(s)`,
     );
 }
 for (const scene of stats.scenes) {

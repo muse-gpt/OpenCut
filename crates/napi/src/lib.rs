@@ -79,7 +79,14 @@ fn render_project(ctx: CallContext) -> Result<JsValue> {
             return Err(Error::new(format!("invalid_input: audioCodec `{codec}` is not `aac` or `flac`")));
         }
     }
-    let options = RenderOptions { range, cancel: Some(&cancel), audio_codec: audio_codec.as_deref(), ..Default::default() };
+    let limiter_ceiling_db = optional_f32(arg, "limiterCeilingDb")?;
+    let options = RenderOptions {
+        range,
+        cancel: Some(&cancel),
+        audio_codec: audio_codec.as_deref(),
+        limiter_ceiling_db,
+        ..Default::default()
+    };
     let stats = media::render::render_project_with(&project, path, &options, &mut |done, total| {
         if done == total || done % 30 == 0 {
             println!("opencut: frame {done}/{total}");
@@ -740,6 +747,11 @@ fn to_json(stats: &RenderStats) -> serde_json::Value {
             "rmsDbfs": level.rms_db,
             "clipped": level.clipped,
             "samples": level.samples,
+        })),
+        "limiter": stats.limiter.map(|limiter| json!({
+            "max_reduction_db": limiter.max_reduction_db,
+            "output_peak_db": limiter.output_peak_db,
+            "limited": limiter.limited,
         })),
         "optionalMissing": stats.optional_missing,
     })
