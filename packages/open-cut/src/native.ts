@@ -39,8 +39,22 @@ export interface RenderResult {
     audioLevel: AudioLevel | null;
     /** What the delivery limiter did; `null` when none was requested. */
     limiter: LimiterStats | null;
+    /** What loudness normalization did; `null` when no target was requested. */
+    loudness: LoudnessStats | null;
     /** Declared optional resources that stayed empty. */
     optionalMissing: string[];
+}
+
+/** Report of one loudness normalization pass. */
+export interface LoudnessStats {
+    /** Requested integrated loudness in LUFS. */
+    target_lufs: number;
+    /** Loudness measured before any gain. */
+    measured_lufs: number;
+    /** Loudness measured after the gain was applied. */
+    achieved_lufs: number;
+    /** Gain that was applied, in dB. */
+    gain_db: number;
 }
 
 /** Report of one delivery limiter pass. */
@@ -99,6 +113,8 @@ export interface RenderOptions {
     audioCodec?: 'aac' | 'flac';
     /** Peak ceiling in dBFS applied to the mixed bed before encoding. */
     limiterCeilingDb?: number;
+    /** Integrated loudness target in LUFS for the mixed bed. */
+    loudnessTargetLufs?: number;
 }
 
 export interface BuildInfo {

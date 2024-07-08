@@ -80,11 +80,13 @@ fn render_project(ctx: CallContext) -> Result<JsValue> {
         }
     }
     let limiter_ceiling_db = optional_f32(arg, "limiterCeilingDb")?;
+    let loudness_target_lufs = optional_f32(arg, "loudnessTargetLufs")?;
     let options = RenderOptions {
         range,
         cancel: Some(&cancel),
         audio_codec: audio_codec.as_deref(),
         limiter_ceiling_db,
+        loudness_target_lufs,
         ..Default::default()
     };
     let stats = media::render::render_project_with(&project, path, &options, &mut |done, total| {
@@ -752,6 +754,12 @@ fn to_json(stats: &RenderStats) -> serde_json::Value {
             "max_reduction_db": limiter.max_reduction_db,
             "output_peak_db": limiter.output_peak_db,
             "limited": limiter.limited,
+        })),
+        "loudness": stats.loudness.map(|loudness| json!({
+            "target_lufs": loudness.target_lufs,
+            "measured_lufs": loudness.measured_lufs,
+            "achieved_lufs": loudness.achieved_lufs,
+            "gain_db": loudness.gain_db,
         })),
         "optionalMissing": stats.optional_missing,
     })

@@ -578,6 +578,7 @@ export class Film {
             cancelFile: options.cancelFile,
             audioCodec: options.audioCodec,
             limiterCeilingDb: options.limiterCeilingDb,
+            loudnessTargetLufs: options.loudnessTargetLufs,
         });
     }
 }
