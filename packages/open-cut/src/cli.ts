@@ -11,7 +11,7 @@
  *   open-cut revise <film.mjs|film.ts> --cue id --text "..." [--json]
  *   open-cut chapters <film.mjs|film.ts> --out file.png [--json]
  *   open-cut compare <film.mjs|film.ts> --before <film.mjs|film.ts> --out file.png [--only p1,p2] [--json]
- *   open-cut inspect <file.mp4> [--probes n] [--expected seconds] [--strict] [--json]
+ *   open-cut inspect <file.mp4> [--probes n] [--expected seconds] [--expect-size WxH] [--strict] [--json]
  *   open-cut archive <film.mjs|film.ts> [--root dir] [--json]
  *   open-cut scenes <film.mjs|film.ts> --out file.png [--json]
  *   open-cut seams <film.mjs|film.ts> --out file.png [--json]
@@ -539,9 +539,20 @@ if (command === 'inspect') {
     if (expected !== undefined && (!Number.isFinite(expected) || expected <= 0)) {
         fail(`--expected must be a positive number of seconds, got ${expectedArg}`, 2);
     }
+    const sizeArg = flag(args, '--expect-size');
+    const size = sizeArg === undefined ? undefined : /^(\d+)x(\d+)$/i.exec(sizeArg.trim());
+    if (sizeArg !== undefined && size === null) {
+        fail(`--expect-size must be WIDTHxHEIGHT, got ${sizeArg}`, 2);
+    }
     let report: ReturnType<typeof inspectDelivery>;
     try {
-        report = inspectDelivery(path.resolve(file), probes, expected);
+        report = inspectDelivery(
+            path.resolve(file),
+            probes,
+            expected,
+            0.5,
+            size === null || size === undefined ? undefined : { width: Number(size[1]), height: Number(size[2]) },
+        );
     }
     catch (error) {
         fail(error instanceof Error ? error.message : String(error), 1);

@@ -339,7 +339,14 @@ export interface NativeBinding {
     writeCoverCandidates(options: { project: string; production: string; out: string; count?: number }): { candidates: CoverCandidate[] };
     exportSubtitles(options: { project: string; production: string; format: SubtitleFormat } & SubtitleStyle): SubtitleExport;
     reviseCue(options: { project: string; production: string; cue: string; text: string } & SubtitleStyle): CueRevision;
-    inspectDelivery(options: { path: string; probes?: number; expectedSeconds?: number; toleranceSeconds?: number }): DeliveryReport;
+    inspectDelivery(options: {
+        path: string;
+        probes?: number;
+        expectedSeconds?: number;
+        toleranceSeconds?: number;
+        expectedWidth?: number;
+        expectedHeight?: number;
+    }): DeliveryReport;
     checkArchive(options: { root: string; production: string }): ArchiveReport;
     renderWithSubtitles(options: { project: string; production: string; out: string } & SubtitleStyle): RenderResult;
 }
