@@ -14,7 +14,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
  */
 export function resolveNapiArtifact(root: string, target: Target): string {
     const base = releaseDir(root, target);
-    const candidates = [path.join(base, cdylibName()), path.join(base, 'opencut_napi.node')];
+    const candidates = [path.join(base, cdylibName(target)), path.join(base, 'opencut_napi.node')];
     const found = candidates.find((candidate) => fs.existsSync(candidate));
     if (!found) {
         throw new Error(`native artifact not found for ${target.triple}. Tried:\n${candidates.map((p) => `  - ${p}`).join('\n')}`);

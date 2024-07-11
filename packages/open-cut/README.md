@@ -52,9 +52,12 @@ const failed = verifyRender(stats).filter((check) => !check.ok);
 
 ## Platform support
 
-Native encoding currently ships for Windows x64. The TypeScript DSL and the
-film scripts are platform independent; only the native renderer is bound to the
-host.
+Native prebuilt addons are published for Windows x64, Linux x64/arm64 and
+macOS x64/arm64. MP4 encoding and media import run through Windows Media
+Foundation, so the full render path needs Windows; the codec-free review tools
+(validate, plan, frame lookup, subtitle export and revision) run on every
+published host. The TypeScript DSL and the film scripts are platform
+independent.
 
 ## License
 

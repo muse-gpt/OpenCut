@@ -351,7 +351,8 @@ export interface NativeBinding {
     renderWithSubtitles(options: { project: string; production: string; out: string } & SubtitleStyle): RenderResult;
 }
 
-const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';
+const PLATFORM_KEY = `${process.platform}-${process.arch}`;
+const PLATFORM_PACKAGE = `@wae/open-cut-${PLATFORM_KEY}`;
 
 /**
  * Specifiers to try: optional env override, the platform package (via
@@ -360,7 +361,7 @@ const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';
 export function nativeCandidates(): string[] {
     const override = process.env.OPEN_CUT_NATIVE;
     const here = path.dirname(fileURLToPath(import.meta.url));
-    const localPackage = path.resolve(here, '..', '..', 'open-cut-win32-x64');
+    const localPackage = path.resolve(here, '..', '..', `open-cut-${PLATFORM_KEY}`);
     const packages = [PLATFORM_PACKAGE, localPackage];
     return override ? [override, ...packages] : packages;
 }
