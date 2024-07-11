@@ -1,0 +1,208 @@
+# Trusted Publisher contract (sole npm trusted workflow — keep this filename):
+#   file = publish-npm.yml
+#   repo = nyar-os/OpenCut
+#   env  = NPM_PUBLISH
+#
+# Triggers:
+#   - push tag v*           (e.g. v0.0.1) — preferred
+#   - workflow_dispatch     (retry only): version MUST match an existing tag;
+#     jobs checkout that tag peel — never publish branch HEAD with a free version.
+# Do not register Trusted Publisher on any other workflow file.
+#
+# The native side is Windows-only today: MP4 encoding runs through Media
+# Foundation, so the matrix ships the single win32-x64 sidecar.
+
+name: Publish npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Must match existing git tag vX.Y.Z (retry only; checkout forced to that tag)'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  provenance:
+    name: Bind version ↔ tag ↔ commit
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.bind.outputs.version }}
+      sha: ${{ steps.bind.outputs.sha }}
+      tag: ${{ steps.bind.outputs.tag }}
+    steps:
+      - name: Checkout (for tag fetch)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Bind publish tag
+        id: bind
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_VERSION: ${{ inputs.version }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_SHA: ${{ github.sha }}
+        run: node scripts/ci/bind-publish-tag.mjs
+
+      - name: Require green CI on tag commit
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG_SHA: ${{ steps.bind.outputs.sha }}
+        run: node scripts/ci/require-ci-success.mjs --sha=${{ steps.bind.outputs.sha }}
+
+  build-native:
+    name: Native win32-x64
+    needs: provenance
+    runs-on: windows-latest
+    steps:
+      - name: Checkout tag peel
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.provenance.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Verify HEAD is bound tag SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse HEAD)"
+          want="${{ needs.provenance.outputs.sha }}"
+          if [[ "$head" != "$want" ]]; then
+            echo "Refusing native build: HEAD=$head != bound tag sha=$want" >&2
+            exit 1
+          fi
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build native (release)
+        run: pnpm run build:napi
+
+      - name: Stage native artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          out="dist/win32-x64"
+          mkdir -p "$out"
+          named="open-cut.win32-x64.node"
+          src="packages/open-cut-win32-x64/$named"
+          if [[ ! -f "$src" ]]; then
+            echo "missing native binary at $src" >&2
+            ls -la packages/open-cut-win32-x64 || true
+            exit 1
+          fi
+          cp "$src" "$out/$named"
+
+      - name: Upload native artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-win32-x64
+          path: dist/win32-x64
+          if-no-files-found: error
+
+  publish:
+    name: Publish packages
+    needs: [provenance, build-native]
+    runs-on: ubuntu-latest
+    environment: NPM_PUBLISH
+    steps:
+      - name: Checkout tag peel
+        uses: actions/checkout@v4
+        with:
+          ref: refs/tags/${{ needs.provenance.outputs.tag }}
+          fetch-depth: 0
+
+      - name: Verify HEAD is bound tag SHA
+        shell: bash
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse HEAD)"
+          want="${{ needs.provenance.outputs.sha }}"
+          if [[ "$head" != "$want" ]]; then
+            echo "Refusing publish: HEAD=$head != bound tag sha=$want" >&2
+            exit 1
+          fi
+          echo "publishing ${{ needs.provenance.outputs.tag }} @ $head"
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.28.0
+
+      - name: Setup Node
+        # Do NOT set registry-url: it writes _authToken=${NODE_AUTH_TOKEN} into
+        # the runner npmrc and blocks Trusted Publisher OIDC (npm E404 on PUT).
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Ensure npm supports Trusted Publishing
+        # npm >= 11.5.1 is the first line with OIDC Trusted Publishing support.
+        run: npm install -g npm@11
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Download native artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: native-win32-x64
+          path: dist/native-win32-x64
+
+      - name: Stage native artifact into the platform package
+        shell: bash
+        run: |
+          set -euo pipefail
+          src="dist/native-win32-x64/open-cut.win32-x64.node"
+          dest="packages/open-cut-win32-x64/open-cut.win32-x64.node"
+          if [[ ! -f "$src" ]]; then
+            echo "missing native binary ($src)" >&2
+            exit 1
+          fi
+          cp "$src" "$dest"
+
+      - name: Build JS (main package dist)
+        run: pnpm run build:ts
+
+      - name: Preflight registry facts for the whole package set
+        run: node scripts/ci/preflight-publish.mjs --version=${{ needs.provenance.outputs.version }}
+
+      - name: Strip token-style npmrc (OIDC only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          unset NODE_AUTH_TOKEN NPM_TOKEN || true
+          for f in "${HOME}/.npmrc" "${NPM_CONFIG_USERCONFIG:-}" "${RUNNER_TEMP:-}/.npmrc"; do
+            [[ -n "${f}" && -f "${f}" ]] || continue
+            if grep -q '_authToken' "${f}"; then
+              grep -v '_authToken' "${f}" > "${f}.oidc" && mv "${f}.oidc" "${f}"
+              echo "stripped _authToken from ${f}"
+            fi
+          done
+
+      - name: Publish platform package to npm
+        run: pnpm --dir packages/open-cut-win32-x64 publish --no-git-checks --access public --provenance
+
+      - name: Publish main package to npm
+        run: pnpm --dir packages/open-cut publish --no-git-checks --access public --provenance
