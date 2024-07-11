@@ -9,8 +9,9 @@
 #     jobs checkout that tag peel — never publish branch HEAD with a free version.
 # Do not register Trusted Publisher on any other workflow file.
 #
-# The native side is Windows-only today: MP4 encoding runs through Media
-# Foundation, so the matrix ships the single win32-x64 sidecar.
+# The native sidecar builds on every supported host. MP4 encoding still runs
+# through Windows Media Foundation, so the non-Windows sidecars carry the
+# cross-platform review tools and report `unsupported` for `render`.
 
 name: Publish npm
 
@@ -59,9 +60,28 @@ jobs:
         run: node scripts/ci/require-ci-success.mjs --sha=${{ steps.bind.outputs.sha }}
 
   build-native:
-    name: Native win32-x64
+    name: Native ${{ matrix.short }}
     needs: provenance
-    runs-on: windows-latest
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            short: win32-x64
+            cross_target: ''
+          - os: ubuntu-latest
+            short: linux-x64
+            cross_target: ''
+          - os: ubuntu-24.04-arm
+            short: linux-arm64
+            cross_target: ''
+          - os: macos-latest
+            short: darwin-arm64
+            cross_target: ''
+          - os: macos-latest
+            short: darwin-x64
+            cross_target: 'x86_64-apple-darwin'
     steps:
       - name: Checkout tag peel
         uses: actions/checkout@v4
@@ -82,6 +102,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.cross_target }}
 
       - name: Install pnpm
         uses: pnpm/action-setup@v4
@@ -97,19 +119,21 @@ jobs:
         run: pnpm install
 
       - name: Build native (release)
+        env:
+          OPEN_CUT_TARGET: ${{ matrix.cross_target }}
         run: pnpm run build:napi
 
       - name: Stage native artifact
         shell: bash
         run: |
           set -euo pipefail
-          out="dist/win32-x64"
+          out="dist/${{ matrix.short }}"
           mkdir -p "$out"
-          named="open-cut.win32-x64.node"
-          src="packages/open-cut-win32-x64/$named"
+          named="open-cut.${{ matrix.short }}.node"
+          src="packages/open-cut-${{ matrix.short }}/$named"
           if [[ ! -f "$src" ]]; then
             echo "missing native binary at $src" >&2
-            ls -la packages/open-cut-win32-x64 || true
+            ls -la "packages/open-cut-${{ matrix.short }}" || true
             exit 1
           fi
           cp "$src" "$out/$named"
@@ -117,8 +141,8 @@ jobs:
       - name: Upload native artifact
         uses: actions/upload-artifact@v4
         with:
-          name: native-win32-x64
-          path: dist/win32-x64
+          name: native-${{ matrix.short }}
+          path: dist/${{ matrix.short }}
           if-no-files-found: error
 
   publish:
@@ -164,23 +188,26 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Download native artifact
+      - name: Download native artifacts
         uses: actions/download-artifact@v4
         with:
-          name: native-win32-x64
-          path: dist/native-win32-x64
+          pattern: native-*
+          path: dist/native-artifacts
 
-      - name: Stage native artifact into the platform package
+      - name: Stage native artifacts into platform packages
         shell: bash
         run: |
           set -euo pipefail
-          src="dist/native-win32-x64/open-cut.win32-x64.node"
-          dest="packages/open-cut-win32-x64/open-cut.win32-x64.node"
-          if [[ ! -f "$src" ]]; then
-            echo "missing native binary ($src)" >&2
-            exit 1
-          fi
-          cp "$src" "$dest"
+          for short in win32-x64 linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
+            src="dist/native-artifacts/native-$short/open-cut.$short.node"
+            dest="packages/open-cut-$short/open-cut.$short.node"
+            if [[ ! -f "$src" ]]; then
+              echo "missing native binary for $short ($src)" >&2
+              exit 1
+            fi
+            mkdir -p "packages/open-cut-$short"
+            cp "$src" "$dest"
+          done
 
       - name: Build JS (main package dist)
         run: pnpm run build:ts
@@ -201,8 +228,13 @@ jobs:
             fi
           done
 
-      - name: Publish platform package to npm
-        run: pnpm --dir packages/open-cut-win32-x64 publish --no-git-checks --access public --provenance
+      - name: Publish platform packages to npm
+        shell: bash
+        run: |
+          set -euo pipefail
+          for short in win32-x64 linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
+            pnpm --dir "packages/open-cut-$short" publish --no-git-checks --access public --provenance
+          done
 
       - name: Publish main package to npm
         run: pnpm --dir packages/open-cut publish --no-git-checks --access public --provenance

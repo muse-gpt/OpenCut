@@ -12,9 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # MP4 encoding currently runs through Media Foundation, so the verify
-        # step is a Windows gate until another encoder backend lands.
-        os: [windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
@@ -28,7 +26,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - run: pnpm install
       - run: pnpm run build
-      - run: node packages/open-cut/dist/cli.js render films/design-tokens.ts --out design-tokens.mp4
-      - run: node packages/open-cut/dist/cli.js verify films/design-tokens.ts --out design-tokens.mp4 --json
-      - run: node packages/open-cut/dist/cli.js render films/chart-demo.ts --out chart-demo.mp4
-      - run: node packages/open-cut/dist/cli.js verify films/chart-demo.ts --out chart-demo.mp4 --json
+      # Loading the addon and validating a production is the cross-platform
+      # gate: the scene contract and the painter run on every host.
+      - run: node packages/open-cut/dist/cli.js validate films/design-tokens.ts
+      # MP4 encoding runs through Media Foundation, so the render/verify gate
+      # is Windows-only until another encoder backend lands upstream.
+      - if: matrix.os == 'windows-latest'
+        run: node packages/open-cut/dist/cli.js render films/design-tokens.ts --out design-tokens.mp4
+      - if: matrix.os == 'windows-latest'
+        run: node packages/open-cut/dist/cli.js verify films/design-tokens.ts --out design-tokens.mp4 --json
+      - if: matrix.os == 'windows-latest'
+        run: node packages/open-cut/dist/cli.js render films/chart-demo.ts --out chart-demo.mp4
+      - if: matrix.os == 'windows-latest'
+        run: node packages/open-cut/dist/cli.js verify films/chart-demo.ts --out chart-demo.mp4 --json
