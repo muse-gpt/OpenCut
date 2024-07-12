@@ -17,6 +17,7 @@
         "render:demo": "pnpm run build && node --experimental-strip-types films/demo.ts"
     },
     "devDependencies": {
+        "@doki-land/nifty": "^0.1.10",
         "@types/node": "^22.20.4",
         "typescript": "^5.9.2"
     }

@@ -9,3 +9,4 @@ films/assets/
 *.log
 .DS_Store
 .idea/
+.env.placeholder.local
