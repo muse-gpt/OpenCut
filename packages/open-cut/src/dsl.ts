@@ -452,6 +452,18 @@ export class Film {
         });
     }
 
+    /** Writes a seam page: every cut as its last and first drawn frames.
+     *
+     *  Needs at least two shots; the frames come from the panels' own ranges. */
+    seams(outPath: string, options: StoryboardOptions = {}): { path: string; cuts: number } {
+        return native.writeSeams({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            ...options,
+        });
+    }
+
     /** Renders the whole film at reduced resolution for motion review.
      *
      *  Timing and audio are unchanged; only the raster scales. `scale` defaults

@@ -290,6 +290,24 @@ fn check_archive(ctx: CallContext) -> Result<JsValue> {
     json_to_js(ctx.env(), &value)
 }
 
+/// Write a seam page: each cut as the last and first drawn frames side by side.
+///
+/// Argument: `{ project, production, out, ...layout }`.
+#[function(js_name = "writeSeams")]
+fn write_seams(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeSeams requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let options = storyboard_options(arg)?;
+    let page = media::render::write_seams(&project, &production, std::path::Path::new(&out), &options).map_err(core_error)?;
+    json_to_js(ctx.env(), &json!({ "path": page.path, "cuts": page.cells.len() }))
+}
+
 /// Render the film with its subtitle cues burned into the picture.
 ///
 /// Argument: `{ project, production, out, maxChars?, maxLines?, minFrames?,
@@ -714,6 +732,7 @@ register_module![
     revise_cue,
     write_comparison,
     write_chapters,
+    write_seams,
     inspect_delivery,
     check_archive,
     render_with_subtitles

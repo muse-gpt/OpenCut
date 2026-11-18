@@ -389,6 +389,34 @@ if (command === 'chapters') {
     process.exit(0);
 }
 
+if (command === 'seams') {
+    const script = args[1];
+    if (!script) {
+        fail('seams requires a film script path', 2);
+    }
+    const outArg = flag(args, '--out');
+    if (outArg === undefined) {
+        fail('seams requires --out <file.png>', 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    try {
+        const page = film.seams(path.resolve(outArg));
+        if (args.includes('--json')) {
+            console.log(JSON.stringify(page, null, 2));
+            process.exit(0);
+        }
+        console.log(`seams: ${page.cuts} cut(s) -> ${page.path}`);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    process.exit(0);
+}
+
 if (command === 'compare') {
     const script = args[1];
     if (!script) {
