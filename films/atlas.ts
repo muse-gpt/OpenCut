@@ -231,8 +231,8 @@ film.scene({
         callout({
             at: 4.4,
             dur: 3.0,
-            ax: 0.5,
-            ay: 0.35,
+            ax: 0.52,
+            ay: 0.45,
             x: 0.68,
             y: 0.58,
             text: 'the same call, every time',
