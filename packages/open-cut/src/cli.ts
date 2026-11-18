@@ -9,7 +9,7 @@
  *   open-cut plan <film.mjs|film.ts> [--json]
  *   open-cut subtitles <film.mjs|film.ts> --out file.srt [--format srt|vtt] [--max-cps n] [--json]
  *   open-cut revise <film.mjs|film.ts> --cue id --text "..." [--json]
- *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--scale n] [--rows n] [--json]
+ *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --from s --to s --out dir [--json]
@@ -224,13 +224,16 @@ if (command === 'storyboard') {
         fail('the film module must default-export a Film instance', 2);
     }
     const out = path.resolve(outArg);
-    const options = rows === undefined ? {} : { rows };
+    const onlyArg = flag(args, '--only');
+    const only = onlyArg === undefined ? undefined : onlyArg.split(',').map((panel) => panel.trim()).filter((panel) => panel.length > 0);
+    const layoutOptions = rows === undefined ? {} : { rows };
+    const options = { ...layoutOptions, ...(only === undefined ? {} : { only }) };
     try {
         const pages = film.storyboard(out, options);
         const contact = flag(args, '--contact');
-        const sheet = contact === undefined ? null : film.contactSheet(path.resolve(contact), options);
+        const sheet = contact === undefined ? null : film.contactSheet(path.resolve(contact), layoutOptions);
         const timelineArg = flag(args, '--timeline');
-        const timeline = timelineArg === undefined ? null : film.timeline(path.resolve(timelineArg), options);
+        const timeline = timelineArg === undefined ? null : film.timeline(path.resolve(timelineArg), layoutOptions);
         const motionArg = flag(args, '--motion');
         const scaleArg = flag(args, '--scale');
         const scale = scaleArg === undefined ? undefined : Number(scaleArg);

@@ -207,7 +207,12 @@ fn write_storyboard(ctx: CallContext) -> Result<JsValue> {
     let production = parse_production(arg)?;
     let out = arg.get_named("out")?.as_string()?;
     let options = storyboard_options(arg)?;
-    let pages = media::render::write_storyboard(&project, &production, std::path::Path::new(&out), &options).map_err(core_error)?;
+    // `only` is a comma-separated list of panel handles: a revision re-renders
+    // just those pages, and each page keeps the number the full book gives it.
+    let only: Vec<String> = optional_string(arg, "only")?
+        .map(|list| list.split(',').map(|panel| panel.trim().to_owned()).filter(|panel| !panel.is_empty()).collect())
+        .unwrap_or_default();
+    let pages = media::render::write_storyboard_selected(&project, &production, std::path::Path::new(&out), &options, &only).map_err(core_error)?;
     let pages: Vec<serde_json::Value> = pages
         .iter()
         .map(|page| {
