@@ -8,6 +8,7 @@
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
  *   open-cut subtitles <film.mjs|film.ts> --out file.srt [--format srt|vtt] [--max-cps n] [--json]
+ *   open-cut revise <film.mjs|film.ts> --cue id --text "..." [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--scale n] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
@@ -310,6 +311,48 @@ if (command === 'subtitles') {
     }
     console.log(`subtitles: ${result.cues} cue(s), ${result.format} -> ${out}`);
     process.exit(0);
+}
+
+if (command === 'revise') {
+    const script = args[1];
+    if (!script) {
+        fail('revise requires a film script path', 2);
+    }
+    const cue = flag(args, '--cue');
+    const text = flag(args, '--text');
+    if (cue === undefined || text === undefined) {
+        fail('revise requires --cue <id> and --text "<new line>"', 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    let revision: ReturnType<Film['reviseCue']>;
+    try {
+        revision = film.reviseCue(cue, text);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    if (args.includes('--json')) {
+        console.log(JSON.stringify(revision, null, 2));
+        process.exit(revision.lines.ok && revision.reading === null ? 0 : 1);
+    }
+    if (revision.lines.ok) {
+        for (const line of revision.lines.lines) {
+            console.log(`  ${line}`);
+        }
+    }
+    else {
+        console.log(`FAIL ${revision.lines.error}`);
+    }
+    if (revision.reading) {
+        console.log(`FAIL ${revision.reading}`);
+    }
+    console.log(`cue ${revision.cue} frames ${revision.range[0]}..${revision.range[1]}`);
+    console.log(`affected: shots ${revision.shots.join(', ') || '(none)'} panels ${revision.panels.join(', ') || '(none)'}`);
+    process.exit(revision.lines.ok && revision.reading === null ? 0 : 1);
 }
 
 if (command === 'verify') {

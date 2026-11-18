@@ -204,6 +204,21 @@ export interface SubtitleExport {
     cues: number;
 }
 
+/** What a cue edit affects, before it is applied. */
+export interface CueRevision {
+    cue: string;
+    /** Absolute project frame range after the edit. */
+    range: [number, number];
+    /** Shots overlapping the cue. */
+    shots: string[];
+    /** Storyboard panels overlapping the cue. */
+    panels: string[];
+    /** Reading-speed problem, when the text is too fast for the range. */
+    reading: string | null;
+    /** New lines, or the reason they do not fit. */
+    lines: { ok: true; lines: string[] } | { ok: false; error: string };
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
@@ -218,6 +233,7 @@ export interface NativeBinding {
     writeMotionPreview(options: { project: string; production: string; out: string; scale?: number }): RenderResult;
     writeCoverCandidates(options: { project: string; production: string; out: string; count?: number }): { candidates: CoverCandidate[] };
     exportSubtitles(options: { project: string; production: string; format: SubtitleFormat } & SubtitleStyle): SubtitleExport;
+    reviseCue(options: { project: string; production: string; cue: string; text: string } & SubtitleStyle): CueRevision;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';
