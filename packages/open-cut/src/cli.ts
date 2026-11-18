@@ -693,6 +693,12 @@ if (limiterCeilingDb !== undefined && (!Number.isFinite(limiterCeilingDb) || lim
     fail(`--limiter-db must be a non-positive dBFS ceiling, got ${limiterArg}`, 2);
 }
 
+const lufsArg = flag(args, '--lufs');
+const loudnessTargetLufs = lufsArg === undefined ? undefined : Number(lufsArg);
+if (loudnessTargetLufs !== undefined && (!Number.isFinite(loudnessTargetLufs) || loudnessTargetLufs > 0)) {
+    fail(`--lufs must be a negative LUFS target, got ${lufsArg}`, 2);
+}
+
 const stats = (() => {
     try {
         if (args.includes('--burn')) {
@@ -701,7 +707,7 @@ const stats = (() => {
             }
             return film.renderWithSubtitles(out);
         }
-        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec, limiterCeilingDb });
+        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec, limiterCeilingDb, loudnessTargetLufs });
     }
     catch (error) {
         // The core reports stable codes (`cancelled`, `media`, `invalid_scene`, …);
@@ -728,6 +734,11 @@ if (stats.audioLevel) {
 if (stats.limiter) {
     console.log(
         `limiter: peak ${stats.limiter.output_peak_db.toFixed(1)} dBFS, reduction ${stats.limiter.max_reduction_db.toFixed(1)} dB on ${stats.limiter.limited} sample(s)`,
+    );
+}
+if (stats.loudness) {
+    console.log(
+        `loudness: ${stats.loudness.measured_lufs.toFixed(1)} -> ${stats.loudness.achieved_lufs.toFixed(1)} LUFS (target ${stats.loudness.target_lufs.toFixed(1)}, gain ${stats.loudness.gain_db.toFixed(1)} dB)`,
     );
 }
 for (const scene of stats.scenes) {
