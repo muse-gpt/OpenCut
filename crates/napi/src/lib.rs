@@ -293,6 +293,17 @@ fn inspect_delivery(ctx: CallContext) -> Result<JsValue> {
             report.suspects.push(suspect);
         }
     }
+    let expected_width = optional_u32(arg, "expectedWidth")?;
+    let expected_height = optional_u32(arg, "expectedHeight")?;
+    if expected_width.is_some() || expected_height.is_some() {
+        let (width, height) = (expected_width.unwrap_or(report.width), expected_height.unwrap_or(report.height));
+        if (width, height) != (report.width, report.height) {
+            report.suspects.push(format!(
+                "delivered {}x{} but the render declared {}x{}",
+                report.width, report.height, width, height
+            ));
+        }
+    }
     let value = serde_json::to_value(&report).map_err(|error| Error::new(format!("encode report: {error}")))?;
     json_to_js(ctx.env(), &value)
 }

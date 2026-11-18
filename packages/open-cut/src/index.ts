@@ -96,8 +96,15 @@ export function assetDigest(path: string): AssetDigest {
  * scene is reported, not failed. Pass `expectedSeconds` to also compare the
  * measured length with the length the project declares.
  */
-export function inspectDelivery(path: string, probes = 8, expectedSeconds?: number, toleranceSeconds = 0.5): DeliveryReport {
-    return native.inspectDelivery({ path, probes, expectedSeconds, toleranceSeconds });
+export function inspectDelivery(path: string, probes = 8, expectedSeconds?: number, toleranceSeconds = 0.5, expectedSize?: { width: number; height: number }): DeliveryReport {
+    return native.inspectDelivery({
+        path,
+        probes,
+        expectedSeconds,
+        toleranceSeconds,
+        expectedWidth: expectedSize?.width,
+        expectedHeight: expectedSize?.height,
+    });
 }
 
 /**
