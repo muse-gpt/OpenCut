@@ -228,6 +228,8 @@ export interface SampleReport {
     seconds: number;
     /** Mean luminance in `0..=1`. */
     mean_luma: number;
+    /** Absolute luminance change from the previous sample; `0` for the first. */
+    jump: number;
     /** Whether the bytes are identical to the previous sample. */
     frozen: boolean;
 }
