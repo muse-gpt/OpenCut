@@ -147,6 +147,48 @@ fn validate_production(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// Plan which tasks still have to run.
+///
+/// Argument: `{ production }`. Returns `{ run, fresh, problems }`: `run` lists
+/// tasks whose latest attempt does not match the declared fingerprints, in
+/// declaration order, and `fresh` lists tasks whose latest attempt is a
+/// current success. `problems` is the same list `validateProduction` returns,
+/// so a host can refuse to start a plan on a broken book.
+#[function(js_name = "planTasks")]
+fn plan_tasks(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("planTasks requires an options object"))?;
+    let raw = arg.get_named("production")?.as_string()?;
+    let production: media::scene::Production =
+        serde_json::from_str(&raw).map_err(|error| Error::new(format!("invalid_input: {error}")))?;
+    let run: Vec<&str> = production.pending_tasks().iter().map(|task| task.id.as_str()).collect();
+    let fresh: Vec<&str> = production.fresh_tasks().iter().map(|task| task.id.as_str()).collect();
+    json_to_js(
+        ctx.env(),
+        &json!({ "run": run, "fresh": fresh, "problems": production.problems() }),
+    )
+}
+
+/// Digest a file's bytes with the same function render reports quote.
+///
+/// Argument: `{ path }`. Returns `{ digest, bytes }`. A production asset's
+/// `digest` can be filled from this call and later compared against the render
+/// report without translating between hashes.
+#[function(js_name = "assetDigest")]
+fn asset_digest(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("assetDigest requires an options object"))?;
+    let path = arg.get_named("path")?.as_string()?;
+    let bytes = std::fs::read(&path).map_err(|error| Error::new(format!("io: {path}: {error}")))?;
+    json_to_js(ctx.env(), &json!({ "digest": media::types::digest(&bytes), "bytes": bytes.len() }))
+}
+
 fn optional_u32(arg: JsValue, name: &str) -> Result<Option<u32>> {
     let value = arg.get_named(name)?;
     if value.is_undefined()? {
@@ -226,4 +268,4 @@ fn json_to_js(env: Env, value: &serde_json::Value) -> Result<JsValue> {
     }
 }
 
-register_module![version, build, render_project, preview_frame, validate_production];
+register_module![version, build, render_project, preview_frame, validate_production, plan_tasks, asset_digest];

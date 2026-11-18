@@ -32,9 +32,12 @@ export type {
     ShapeOptions,
     ShotInput,
     TaskInput,
+    TaskRunInput,
+    TaskStatus,
     TextOptions,
 } from './dsl.js';
 export type {
+    AssetDigest,
     AssetFingerprint,
     AudioLevel,
     BuildInfo,
@@ -44,6 +47,7 @@ export type {
     RenderOptions,
     RenderResult,
     SceneSpan,
+    TaskPlan,
 } from './native.js';
 export { native } from './native.js';
 export type { RenderCheck } from './verify.js';
@@ -51,7 +55,7 @@ export { verifyRender } from './verify.js';
 export type * from './types.js';
 
 import { native } from './native.js';
-import type { BuildInfo } from './native.js';
+import type { AssetDigest, BuildInfo } from './native.js';
 
 /** Native library version reported by the Rust core binding. */
 export function nativeVersion(): string {
@@ -61,4 +65,12 @@ export function nativeVersion(): string {
 /** Source revision and profile this native binary was built from. */
 export function nativeBuild(): BuildInfo {
     return native.build();
+}
+
+/** Digest of one file, computed with the function render reports quote.
+ *
+ *  A production asset's `digest` can be filled from this call and compared
+ *  with a render report without translating between hashes. */
+export function assetDigest(path: string): AssetDigest {
+    return native.assetDigest({ path });
 }

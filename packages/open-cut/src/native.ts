@@ -124,12 +124,34 @@ export interface ProductionReport {
     counts: ProductionCounts;
 }
 
+/**
+ * Which tasks still have to run.
+ *
+ * `run` lists tasks whose latest attempt does not match the declared input and
+ * config fingerprints, in declaration order. `fresh` lists tasks whose latest
+ * attempt is a current success. `problems` is the same list validation
+ * reports, so a host can refuse to start a plan on a broken book.
+ */
+export interface TaskPlan {
+    run: string[];
+    fresh: string[];
+    problems: string[];
+}
+
+/** Digest of one file, computed with the function render reports quote. */
+export interface AssetDigest {
+    digest: string;
+    bytes: number;
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
     renderProject(options: { project: string; out: string } & RenderOptions): RenderResult;
     previewFrame(options: { project: string; frame: number; out: string }): PreviewResult;
     validateProduction(options: { production: string }): ProductionReport;
+    planTasks(options: { production: string }): TaskPlan;
+    assetDigest(options: { path: string }): AssetDigest;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';
