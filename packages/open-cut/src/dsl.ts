@@ -5,7 +5,7 @@
  * compiled artifact.
  */
 import { native } from './native.js';
-import type { PreviewResult, ProductionReport, RenderOptions, RenderResult, TaskPlan } from './native.js';
+import type { PreviewResult, ProductionReport, RenderOptions, RenderResult, StoryboardOptions, StoryboardPage, TaskPlan } from './native.js';
 import type {
     Animated,
     AudioSpec,
@@ -362,6 +362,30 @@ export class Film {
      *  `problems` is the validation list so a host can refuse to start. */
     planTasks(): TaskPlan {
         return native.planTasks({ production: JSON.stringify(toWire(this.toProduction())) });
+    }
+
+    /** Writes storyboard pages into `outDir`, one page per `rows` panels.
+     *
+     *  Every thumbnail is a frame this film actually renders, and each row
+     *  carries first/middle/last frames plus the shot, panel, range and
+     *  dialogue. A book that fails validation throws before writing. */
+    storyboard(outDir: string, options: StoryboardOptions = {}): StoryboardPage[] {
+        return native.writeStoryboard({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outDir,
+            ...options,
+        }).pages;
+    }
+
+    /** Writes one contact sheet: the middle frame of every panel in a grid. */
+    contactSheet(outPath: string, options: StoryboardOptions = {}): StoryboardPage {
+        return native.writeContactSheet({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            ...options,
+        });
     }
 
     /** Renders one frame into a PNG.

@@ -47,6 +47,9 @@ export type {
     RenderOptions,
     RenderResult,
     SceneSpan,
+    StoryboardCell,
+    StoryboardOptions,
+    StoryboardPage,
     TaskPlan,
 } from './native.js';
 export { native } from './native.js';

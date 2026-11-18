@@ -189,6 +189,122 @@ fn asset_digest(ctx: CallContext) -> Result<JsValue> {
     json_to_js(ctx.env(), &json!({ "digest": media::types::digest(&bytes), "bytes": bytes.len() }))
 }
 
+/// Write storyboard pages from a project and its production book.
+///
+/// Argument: `{ project, production, out, width?, height?, rows?, margin?,
+/// gap?, titleSize?, labelSize? }`. `out` is a directory; one page per
+/// `rows` panels is written. Returns `{ pages: [{ index, path, cells }] }`,
+/// where each cell names the shot, the panel, the three key frames drawn and
+/// the dialogue line. A production that fails validation writes nothing.
+#[function(js_name = "writeStoryboard")]
+fn write_storyboard(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeStoryboard requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let options = storyboard_options(arg)?;
+    let pages = media::render::write_storyboard(&project, &production, std::path::Path::new(&out), &options).map_err(core_error)?;
+    let pages: Vec<serde_json::Value> = pages
+        .iter()
+        .map(|page| {
+            json!({
+                "index": page.index,
+                "path": page.path,
+                "cells": page.cells.iter().map(cell_json).collect::<Vec<_>>(),
+            })
+        })
+        .collect();
+    json_to_js(ctx.env(), &json!({ "pages": pages }))
+}
+
+/// Write one contact sheet: the middle frame of every panel in a grid.
+///
+/// Argument: `{ project, production, out, width?, height?, columns?, rows?,
+/// margin?, gap?, titleSize?, labelSize? }`. `out` is the PNG path.
+#[function(js_name = "writeContactSheet")]
+fn write_contact_sheet(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeContactSheet requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let options = storyboard_options(arg)?;
+    let sheet = media::render::write_contact_sheet(&project, &production, std::path::Path::new(&out), &options).map_err(core_error)?;
+    json_to_js(
+        ctx.env(),
+        &json!({
+            "index": sheet.index,
+            "path": sheet.path,
+            "cells": sheet.cells.iter().map(cell_json).collect::<Vec<_>>(),
+        }),
+    )
+}
+
+fn parse_production(arg: JsValue) -> Result<media::scene::Production> {
+    let raw = arg.get_named("production")?.as_string()?;
+    serde_json::from_str(&raw).map_err(|error| Error::new(format!("invalid_input: {error}")))
+}
+
+fn cell_json(cell: &media::render::StoryboardCell) -> serde_json::Value {
+    json!({
+        "shot": cell.shot,
+        "panel": cell.panel,
+        "frames": cell.frames,
+        "dialogue": cell.dialogue,
+    })
+}
+
+fn storyboard_options(arg: JsValue) -> Result<media::render::StoryboardOptions> {
+    let mut options = media::render::StoryboardOptions::default();
+    if let Some(width) = optional_u32(arg, "width")? {
+        options.width = width;
+    }
+    if let Some(height) = optional_u32(arg, "height")? {
+        options.height = height;
+    }
+    if let Some(rows) = optional_u32(arg, "rows")? {
+        options.rows = rows.max(1);
+    }
+    if let Some(columns) = optional_u32(arg, "columns")? {
+        options.columns = columns.max(1);
+    }
+    if let Some(value) = optional_f32(arg, "margin")? {
+        options.margin = value;
+    }
+    if let Some(value) = optional_f32(arg, "gap")? {
+        options.gap = value;
+    }
+    if let Some(value) = optional_f32(arg, "titleSize")? {
+        options.title_size = value;
+    }
+    if let Some(value) = optional_f32(arg, "labelSize")? {
+        options.label_size = value;
+    }
+    Ok(options)
+}
+
+fn optional_f32(arg: JsValue, name: &str) -> Result<Option<f32>> {
+    let value = arg.get_named(name)?;
+    if value.is_undefined()? {
+        return Ok(None);
+    }
+    let number = match value.as_f64() {
+        Ok(number) => number,
+        // `null` is how a caller spells "not set"; any other non-numeric value
+        // is a contract violation instead of a silent default.
+        Err(_) if value.as_i64().is_err() => return Ok(None),
+        Err(error) => return Err(error),
+    };
+    Ok(Some(number as f32))
+}
+
 fn optional_u32(arg: JsValue, name: &str) -> Result<Option<u32>> {
     let value = arg.get_named(name)?;
     if value.is_undefined()? {
@@ -268,4 +384,4 @@ fn json_to_js(env: Env, value: &serde_json::Value) -> Result<JsValue> {
     }
 }
 
-register_module![version, build, render_project, preview_frame, validate_production, plan_tasks, asset_digest];
+register_module![version, build, render_project, preview_frame, validate_production, plan_tasks, asset_digest, write_storyboard, write_contact_sheet];
