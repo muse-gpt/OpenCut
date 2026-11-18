@@ -37,6 +37,8 @@ export type {
     TextOptions,
 } from './dsl.js';
 export type {
+    ArchiveReport,
+    AssetCheck,
     AssetDigest,
     AssetFingerprint,
     AudioLevel,
@@ -65,7 +67,7 @@ export { verifyRender } from './verify.js';
 export type * from './types.js';
 
 import { native } from './native.js';
-import type { AssetDigest, BuildInfo, DeliveryReport } from './native.js';
+import type { ArchiveReport, AssetDigest, BuildInfo, DeliveryReport } from './native.js';
 
 /** Native library version reported by the Rust core binding. */
 export function nativeVersion(): string {
@@ -94,4 +96,15 @@ export function assetDigest(path: string): AssetDigest {
  */
 export function inspectDelivery(path: string, probes = 8): DeliveryReport {
     return native.inspectDelivery({ path, probes });
+}
+
+/**
+ * Re-reads every asset of a production under `root` and compares it with the
+ * recorded digest.
+ *
+ * `missing` and `mismatched` are separate so an archive is never built over a
+ * hole or a silently replaced file.
+ */
+export function checkArchive(root: string, production: string | object): ArchiveReport {
+    return native.checkArchive({ root, production: typeof production === 'string' ? production : JSON.stringify(production) });
 }

@@ -271,6 +271,25 @@ fn inspect_delivery(ctx: CallContext) -> Result<JsValue> {
     json_to_js(ctx.env(), &value)
 }
 
+/// Re-read a production's asset closure against a directory tree.
+///
+/// Argument: `{ root, project, production }`. Every asset is read from disk and
+/// compared with its recorded digest. Missing and changed files are reported
+/// separately, so an archive is never built over a hole.
+#[function(js_name = "checkArchive")]
+fn check_archive(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("checkArchive requires an options object"))?;
+    let root = arg.get_named("root")?.as_string()?;
+    let production = parse_production(arg)?;
+    let report = media::render::check_archive(std::path::Path::new(&root), &production).map_err(core_error)?;
+    let value = serde_json::to_value(&report).map_err(|error| Error::new(format!("encode report: {error}")))?;
+    json_to_js(ctx.env(), &value)
+}
+
 /// Write a before/after page for the selected panels.
 ///
 /// Argument: `{ before, project, production, out, only?, ...layout }`. Both
@@ -653,5 +672,6 @@ register_module![
     revise_cue,
     write_comparison,
     write_chapters,
-    inspect_delivery
+    inspect_delivery,
+    check_archive
 ];

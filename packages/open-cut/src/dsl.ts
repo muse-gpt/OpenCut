@@ -6,6 +6,7 @@
  */
 import { native } from './native.js';
 import type {
+    ArchiveReport,
     CoverCandidate,
     CueRevision,
     PreviewResult,
@@ -366,6 +367,14 @@ export class Film {
      *  problem is returned at once, each naming the handle the author wrote. */
     validateProduction(): ProductionReport {
         return native.validateProduction({ production: JSON.stringify(toWire(this.toProduction())) });
+    }
+
+    /** Re-reads every asset under `root` and compares it with the recorded digest.
+     *
+     *  `missing` and `mismatched` are reported separately, so an archive is
+     *  never built over a hole or a silently replaced file. */
+    archive(root: string): ArchiveReport {
+        return native.checkArchive({ root, production: JSON.stringify(toWire(this.toProduction())) });
     }
 
     /** Which declared tasks still have to run, given their latest attempts.
