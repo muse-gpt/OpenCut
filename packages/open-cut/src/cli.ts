@@ -11,7 +11,9 @@
  *   open-cut revise <film.mjs|film.ts> --cue id --text "..." [--json]
  *   open-cut chapters <film.mjs|film.ts> --out file.png [--json]
  *   open-cut compare <film.mjs|film.ts> --before <film.mjs|film.ts> --out file.png [--only p1,p2] [--json]
- *   open-cut inspect <file.mp4> [--probes n] [--strict] [--json]
+ *   open-cut inspect <file.mp4> [--probes n] [--expected seconds] [--strict] [--json]
+ *   open-cut archive <film.mjs|film.ts> [--root dir] [--json]
+ *   open-cut seams <film.mjs|film.ts> --out file.png [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
@@ -463,9 +465,14 @@ if (command === 'inspect') {
     if (!Number.isInteger(probes) || probes < 2) {
         fail(`--probes must be an integer of at least 2, got ${probesArg}`, 2);
     }
+    const expectedArg = flag(args, '--expected');
+    const expected = expectedArg === undefined ? undefined : Number(expectedArg);
+    if (expected !== undefined && (!Number.isFinite(expected) || expected <= 0)) {
+        fail(`--expected must be a positive number of seconds, got ${expectedArg}`, 2);
+    }
     let report: ReturnType<typeof inspectDelivery>;
     try {
-        report = inspectDelivery(path.resolve(file), probes);
+        report = inspectDelivery(path.resolve(file), probes, expected);
     }
     catch (error) {
         fail(error instanceof Error ? error.message : String(error), 1);

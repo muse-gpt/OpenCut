@@ -254,9 +254,12 @@ fn write_contact_sheet(ctx: CallContext) -> Result<JsValue> {
 
 /// Reopen a delivered file and report what the decoder actually sees.
 ///
-/// Argument: `{ path, probes? }`. Returns frame size, sampled-frame luminance,
-/// frozen neighbours, audio peak/RMS/clipping and a suspect list. Frames are
-/// sampled, not counted; a file that does not decode is an error.
+/// Argument: `{ path, probes?, expectedSeconds?, toleranceSeconds? }`. Returns
+/// frame size, sampled-frame luminance, frozen neighbours, audio peak/RMS/
+/// clipping and a suspect list. When `expectedSeconds` is given, the measured
+/// duration is compared with it and a mismatch becomes a suspect naming both
+/// values. Frames are sampled, not counted; a file that does not decode is an
+/// error.
 #[function(js_name = "inspectDelivery")]
 fn inspect_delivery(ctx: CallContext) -> Result<JsValue> {
     let arg = ctx
@@ -266,7 +269,13 @@ fn inspect_delivery(ctx: CallContext) -> Result<JsValue> {
         .ok_or_else(|| Error::new("inspectDelivery requires an options object"))?;
     let path = arg.get_named("path")?.as_string()?;
     let probes = optional_u32(arg, "probes")?.unwrap_or(8).max(2) as usize;
-    let report = media::render::inspect_delivery(std::path::Path::new(&path), probes, media::types::SAMPLE_RATE).map_err(core_error)?;
+    let mut report = media::render::inspect_delivery(std::path::Path::new(&path), probes, media::types::SAMPLE_RATE).map_err(core_error)?;
+    if let Some(expected) = optional_f32(arg, "expectedSeconds")? {
+        let tolerance = optional_f32(arg, "toleranceSeconds")?.unwrap_or(0.5);
+        if let Some(suspect) = report.duration_suspect(expected as f64, tolerance as f64) {
+            report.suspects.push(suspect);
+        }
+    }
     let value = serde_json::to_value(&report).map_err(|error| Error::new(format!("encode report: {error}")))?;
     json_to_js(ctx.env(), &value)
 }
