@@ -291,6 +291,7 @@ export interface NativeBinding {
     reviseCue(options: { project: string; production: string; cue: string; text: string } & SubtitleStyle): CueRevision;
     inspectDelivery(options: { path: string; probes?: number }): DeliveryReport;
     checkArchive(options: { root: string; production: string }): ArchiveReport;
+    renderWithSubtitles(options: { project: string; production: string; out: string } & SubtitleStyle): RenderResult;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';

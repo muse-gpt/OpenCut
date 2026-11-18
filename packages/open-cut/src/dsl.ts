@@ -506,6 +506,20 @@ export class Film {
         });
     }
 
+    /** Renders the film with its cues burned into the picture.
+     *
+     *  The lines come from the same resolver and wrapper the subtitle exporter
+     *  uses, so the burned words and the SRT/VTT cannot drift. An unreadable
+     *  cue throws before any frame is written. */
+    renderWithSubtitles(outPath: string, style: SubtitleStyle = {}): RenderResult {
+        return native.renderWithSubtitles({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            ...style,
+        });
+    }
+
     /** Renders one frame into a PNG.
      *
      * The preview runs the same contract checks and painter as an export, so a

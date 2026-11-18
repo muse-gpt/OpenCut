@@ -290,6 +290,48 @@ fn check_archive(ctx: CallContext) -> Result<JsValue> {
     json_to_js(ctx.env(), &value)
 }
 
+/// Render the film with its subtitle cues burned into the picture.
+///
+/// Argument: `{ project, production, out, maxChars?, maxLines?, minFrames?,
+/// maxCps? }`. Cues are resolved from shot-local to project frames once and
+/// wrapped by the same subtitle owner the exporter uses, so the burned words
+/// and the exported SRT/VTT cannot drift apart. A cue that is too fast to read
+/// fails before any frame is written.
+#[function(js_name = "renderWithSubtitles")]
+fn render_with_subtitles(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("renderWithSubtitles requires an options object"))?;
+    let project_json = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let parsed_project: media::scene::Project =
+        serde_json::from_str(&project_json).map_err(|error| Error::new(format!("invalid_input: {error}")))?;
+    let mut style = media::scene::SubtitleStyle::default();
+    if let Some(value) = optional_u32(arg, "maxChars")? {
+        style.max_chars = value as usize;
+    }
+    if let Some(value) = optional_u32(arg, "maxLines")? {
+        style.max_lines = value as usize;
+    }
+    if let Some(value) = optional_u32(arg, "minFrames")? {
+        style.min_frames = value;
+    }
+    if let Some(value) = optional_f32(arg, "maxCps")? {
+        style.max_cps = value;
+    }
+    let cues = media::scene::absolute_cues(&parsed_project, &production, &style).map_err(core_error)?;
+    media::scene::check_reading(&cues, &style, parsed_project.time_base()).map_err(core_error)?;
+    let burned: Vec<media::render::BurnInCue> =
+        cues.iter().map(|cue| media::render::BurnInCue { range: [cue.start, cue.end], lines: cue.lines.clone() }).collect();
+    let options = media::render::RenderOptions { subtitles: Some(&burned), ..Default::default() };
+    let stats = media::render::render_project_with(&project_json, std::path::Path::new(&out), &options, &mut |_, _| {})
+        .map_err(core_error)?;
+    json_to_js(ctx.env(), &to_json(&stats))
+}
+
 /// Write a before/after page for the selected panels.
 ///
 /// Argument: `{ before, project, production, out, only?, ...layout }`. Both
@@ -673,5 +715,6 @@ register_module![
     write_comparison,
     write_chapters,
     inspect_delivery,
-    check_archive
+    check_archive,
+    render_with_subtitles
 ];
