@@ -395,6 +395,34 @@ export class Film {
         }).pages;
     }
 
+    /** Writes a chapter overview: one row per shot with its first and last
+     *  frame, which doubles as the seam check between consecutive shots. */
+    chapters(outPath: string, options: StoryboardOptions = {}): StoryboardPage {
+        return native.writeChapters({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            ...options,
+        });
+    }
+
+    /** Writes a before/after page: each panel's middle frame from two
+     *  revisions, rendered with the same painter.
+     *
+     *  `before` is another compiled project (the previous revision). `only`
+     *  limits the page to those panel handles. */
+    comparison(before: Project, outPath: string, options: StoryboardOptions & { only?: string[] } = {}): { path: string; panels: string[] } {
+        const { only, ...layout } = options;
+        return native.writeComparison({
+            before: JSON.stringify(toWire(before)),
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            out: outPath,
+            ...layout,
+            only: only === undefined ? undefined : only.join(','),
+        });
+    }
+
     /** Writes one contact sheet: the middle frame of every panel in a grid. */
     contactSheet(outPath: string, options: StoryboardOptions = {}): StoryboardPage {
         return native.writeContactSheet({

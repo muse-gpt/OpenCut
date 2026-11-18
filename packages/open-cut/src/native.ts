@@ -228,6 +228,8 @@ export interface NativeBinding {
     planTasks(options: { production: string }): TaskPlan;
     assetDigest(options: { path: string }): AssetDigest;
     writeStoryboard(options: { project: string; production: string; out: string; only?: string } & StoryboardOptions): { pages: StoryboardPage[] };
+    writeComparison(options: { before: string; project: string; production: string; out: string; only?: string } & StoryboardOptions): { path: string; panels: string[] };
+    writeChapters(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeContactSheet(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeTimeline(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeMotionPreview(options: { project: string; production: string; out: string; scale?: number }): RenderResult;

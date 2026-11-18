@@ -252,6 +252,58 @@ fn write_contact_sheet(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// Write a before/after page for the selected panels.
+///
+/// Argument: `{ before, project, production, out, only?, ...layout }`. Both
+/// revisions are rendered with the same painter, so the difference is the edit
+/// and not an encode artifact.
+#[function(js_name = "writeComparison")]
+fn write_comparison(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeComparison requires an options object"))?;
+    let before = arg.get_named("before")?.as_string()?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let options = storyboard_options(arg)?;
+    let only = panel_filter(arg)?;
+    let page = media::render::write_comparison(&before, &project, &production, std::path::Path::new(&out), &only, &options).map_err(core_error)?;
+    json_to_js(ctx.env(), &json!({ "path": page.path, "panels": page.panels }))
+}
+
+/// Write a chapter overview: one row per shot with its first and last frame.
+#[function(js_name = "writeChapters")]
+fn write_chapters(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeChapters requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let options = storyboard_options(arg)?;
+    let page = media::render::write_chapters(&project, &production, std::path::Path::new(&out), &options).map_err(core_error)?;
+    json_to_js(
+        ctx.env(),
+        &json!({
+            "index": page.index,
+            "path": page.path,
+            "cells": page.cells.iter().map(cell_json).collect::<Vec<_>>(),
+        }),
+    )
+}
+
+/// Reads the comma-separated `only` panel filter.
+fn panel_filter(arg: JsValue) -> Result<Vec<String>> {
+    Ok(optional_string(arg, "only")?
+        .map(|list| list.split(',').map(|panel| panel.trim().to_owned()).filter(|panel| !panel.is_empty()).collect())
+        .unwrap_or_default())
+}
+
 /// Recompute one cue after its text changes, without applying the edit.
 ///
 /// Argument: `{ project, production, cue, text, maxChars?, maxLines?,
@@ -579,5 +631,7 @@ register_module![
     write_motion_preview,
     write_cover_candidates,
     export_subtitles,
-    revise_cue
+    revise_cue,
+    write_comparison,
+    write_chapters
 ];
