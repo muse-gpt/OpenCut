@@ -256,6 +256,10 @@ export interface DeliveryAudio {
     peak_db: number;
     rms_db: number;
     clipped: number;
+    /** Gated integrated loudness in LUFS. */
+    integrated_lufs: number;
+    /** Interpolated true peak in dBFS. */
+    true_peak_db: number;
 }
 
 /** What the decoder sees when a delivered file is reopened. */

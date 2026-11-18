@@ -558,6 +558,9 @@ if (command === 'inspect') {
         console.log(
             `  audio: ${report.audio.seconds.toFixed(2)}s @${report.audio.sample_rate}Hz, peak ${report.audio.peak_db.toFixed(1)} dBFS, rms ${report.audio.rms_db.toFixed(1)} dBFS, clipped ${report.audio.clipped}`,
         );
+        console.log(
+            `  loudness: ${report.audio.integrated_lufs.toFixed(1)} LUFS, true peak ${report.audio.true_peak_db.toFixed(1)} dBFS`,
+        );
     }
     for (const suspect of report.suspects) {
         console.log(`  suspect: ${suspect}`);
