@@ -3,7 +3,7 @@
  * OpenCut CLI — compile a film script into an MP4.
  *
  * Usage:
- *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--json]
+ *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--audio-codec aac|flac] [--burn] [--json]
  *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
@@ -668,6 +668,12 @@ if (sceneId !== undefined) {
     }
 }
 
+const audioCodecArg = flag(args, '--audio-codec');
+if (audioCodecArg !== undefined && audioCodecArg !== 'aac' && audioCodecArg !== 'flac') {
+    fail(`--audio-codec must be aac or flac, got ${audioCodecArg}`, 2);
+}
+const audioCodec = audioCodecArg as 'aac' | 'flac' | undefined;
+
 const stats = (() => {
     try {
         if (args.includes('--burn')) {
@@ -676,7 +682,7 @@ const stats = (() => {
             }
             return film.renderWithSubtitles(out);
         }
-        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file') });
+        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec });
     }
     catch (error) {
         // The core reports stable codes (`cancelled`, `media`, `invalid_scene`, …);
