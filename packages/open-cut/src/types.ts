@@ -555,4 +555,6 @@ export interface Project {
     fonts?: FontsSpec | null;
     /** Semantic color card; color fields may reference `$role`. */
     design?: DesignSpec;
+    /** Extra raster resolution rendered before downsampling, `1..=2`. */
+    supersample?: number;
 }

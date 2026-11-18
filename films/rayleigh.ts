@@ -13,7 +13,7 @@
 import { pathToFileURL } from 'node:url';
 import { Film, anim, bands, callout, chart, footnote, glow, grain, text } from '../packages/open-cut/dist/index.js';
 
-const film = new Film({ width: 1920, height: 1080, fps: 30 });
+const film = new Film({ width: 1920, height: 1080, fps: 30, supersample: 2 });
 
 // A slow push keeps the frame alive without a cut.
 film.camera([
