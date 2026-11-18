@@ -57,9 +57,8 @@ film.design({
 film.component('tile', [
     shape({ at: 0, dur: 5.5, shape: 'ring', x: 0.5, y: 0.5, w: 0.18, h: 0.18, color: colorToken('warm'), stroke: 8, fadeIn: 0.5 }),
     shape({ at: 0, dur: 5.5, shape: 'circle', x: 0.5, y: 0.5, w: 0.08, h: 0.08, color: colorToken('warm'), fadeIn: 0.5 }),
-    // `rect` anchors at its top-left corner while circles anchor at their
-    // centre, so the bar is offset by half its width to sit over the ring.
-    shape({ at: 0, dur: 5.5, shape: 'rect', x: 0.39, y: 0.33, w: 0.22, h: 0.012, color: colorToken('accent'), fadeIn: 0.4 }),
+    // Every shape anchors at its centre, so the bar and the ring line up.
+    shape({ at: 0, dur: 5.5, shape: 'rect', x: 0.5, y: 0.34, w: 0.22, h: 0.012, color: colorToken('accent'), fadeIn: 0.4 }),
     text({ at: 0.2, dur: 5.3, content: 'tile', size: 130, color: colorToken('ink'), x: 0.5, y: 0.63, rise: 24, stagger: 2 }),
 ]);
 
