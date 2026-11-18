@@ -7,7 +7,7 @@
  *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
- *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--rows n] [--json]
+ *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--scale n] [--rows n] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --from s --to s --out dir [--json]
@@ -227,9 +227,24 @@ if (command === 'storyboard') {
         const pages = film.storyboard(out, options);
         const contact = flag(args, '--contact');
         const sheet = contact === undefined ? null : film.contactSheet(path.resolve(contact), options);
+        const timelineArg = flag(args, '--timeline');
+        const timeline = timelineArg === undefined ? null : film.timeline(path.resolve(timelineArg), options);
+        const motionArg = flag(args, '--motion');
+        const scaleArg = flag(args, '--scale');
+        const scale = scaleArg === undefined ? undefined : Number(scaleArg);
+        if (scale !== undefined && (!Number.isFinite(scale) || scale <= 0 || scale > 1)) {
+            fail(`--scale must be a number in (0, 1], got ${scaleArg}`, 2);
+        }
+        const motion = motionArg === undefined ? null : film.motionPreview(path.resolve(motionArg), { scale });
+        const coversArg = flag(args, '--covers');
+        const coversCount = coversArg === undefined ? 0 : Number(coversArg);
+        if (coversArg !== undefined && (!Number.isInteger(coversCount) || coversCount < 1)) {
+            fail(`--covers must be a positive integer, got ${coversArg}`, 2);
+        }
+        const covers = coversCount === 0 ? null : film.coverCandidates(path.join(out, 'covers'), coversCount);
         const cells = pages.reduce((sum, page) => sum + page.cells.length, 0);
         if (args.includes('--json')) {
-            console.log(JSON.stringify({ pages, sheet }, null, 2));
+            console.log(JSON.stringify({ pages, sheet, timeline, motion, covers }, null, 2));
             process.exit(0);
         }
         console.log(`storyboard: ${pages.length} page(s), ${cells} panel row(s) -> ${out}`);
@@ -238,6 +253,15 @@ if (command === 'storyboard') {
         }
         if (sheet) {
             console.log(`contact sheet: ${sheet.path}`);
+        }
+        if (timeline) {
+            console.log(`timeline: ${timeline.path} (${timeline.cells.length} shot rows)`);
+        }
+        if (motion) {
+            console.log(`motion preview: ${motion.out} [${motion.width}x${motion.height}, ${motion.frames} frames]`);
+        }
+        if (covers) {
+            console.log(`cover candidates: ${covers.length} in ${path.join(out, 'covers')}`);
         }
     }
     catch (error) {

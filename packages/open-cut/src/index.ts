@@ -41,6 +41,7 @@ export type {
     AssetFingerprint,
     AudioLevel,
     BuildInfo,
+    CoverCandidate,
     PreviewResult,
     ProductionCounts,
     ProductionReport,

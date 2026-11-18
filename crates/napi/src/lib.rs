@@ -247,6 +247,85 @@ fn write_contact_sheet(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// Write a timeline overview: one row per shot, panel ticks and a cue strip.
+///
+/// Argument: `{ project, production, out, width?, height?, margin?, gap?,
+/// titleSize?, labelSize? }`. `out` is the PNG path.
+#[function(js_name = "writeTimeline")]
+fn write_timeline(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeTimeline requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let options = storyboard_options(arg)?;
+    let page = media::render::write_timeline(&project, &production, std::path::Path::new(&out), &options).map_err(core_error)?;
+    json_to_js(
+        ctx.env(),
+        &json!({
+            "index": page.index,
+            "path": page.path,
+            "cells": page.cells.iter().map(cell_json).collect::<Vec<_>>(),
+        }),
+    )
+}
+
+/// Write cover candidates from frames the film actually shows.
+///
+/// Argument: `{ project, production, out, count? }`. `out` is a directory;
+/// candidates are written as `cover-01.png`… and returned sorted by the
+/// shortlist score, so a human still picks the final cover.
+#[function(js_name = "writeCoverCandidates")]
+fn write_cover_candidates(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeCoverCandidates requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let count = optional_u32(arg, "count")?.unwrap_or(4).max(1);
+    let candidates = media::render::write_cover_candidates(&project, &production, std::path::Path::new(&out), count).map_err(core_error)?;
+    let candidates: Vec<serde_json::Value> = candidates
+        .iter()
+        .map(|candidate| json!({ "frame": candidate.frame, "path": candidate.path, "score": candidate.score }))
+        .collect();
+    json_to_js(ctx.env(), &json!({ "candidates": candidates }))
+}
+
+/// Render a low-detail motion preview of the whole film.
+///
+/// Argument: `{ project, production, out, scale? }`. `scale` is clamped to
+/// `0.1..=1.0`; timing, scenes and audio are unchanged, only the raster gets
+/// smaller. Returns the usual render statistics.
+#[function(js_name = "writeMotionPreview")]
+fn write_motion_preview(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeMotionPreview requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let path = std::path::Path::new(&out);
+    if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+        std::fs::create_dir_all(parent).map_err(|error| Error::new(format!("cannot create output directory: {error}")))?;
+    }
+    let scale = optional_f32(arg, "scale")?.unwrap_or(0.5);
+    let stats = media::render::write_motion_preview(&project, &production, path, scale, &mut |done, total| {
+        if done == total || done % 60 == 0 {
+            println!("opencut: motion {done}/{total}");
+        }
+    })
+    .map_err(core_error)?;
+    json_to_js(ctx.env(), &to_json(&stats))
+}
+
 fn parse_production(arg: JsValue) -> Result<media::scene::Production> {
     let raw = arg.get_named("production")?.as_string()?;
     serde_json::from_str(&raw).map_err(|error| Error::new(format!("invalid_input: {error}")))
@@ -384,4 +463,17 @@ fn json_to_js(env: Env, value: &serde_json::Value) -> Result<JsValue> {
     }
 }
 
-register_module![version, build, render_project, preview_frame, validate_production, plan_tasks, asset_digest, write_storyboard, write_contact_sheet];
+register_module![
+    version,
+    build,
+    render_project,
+    preview_frame,
+    validate_production,
+    plan_tasks,
+    asset_digest,
+    write_storyboard,
+    write_contact_sheet,
+    write_timeline,
+    write_motion_preview,
+    write_cover_candidates
+];
