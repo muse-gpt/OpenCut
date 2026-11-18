@@ -577,6 +577,7 @@ export class Film {
             endFrame: options.endFrame,
             cancelFile: options.cancelFile,
             audioCodec: options.audioCodec,
+            limiterCeilingDb: options.limiterCeilingDb,
         });
     }
 }
