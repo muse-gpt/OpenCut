@@ -13,6 +13,7 @@
  *   open-cut compare <film.mjs|film.ts> --before <film.mjs|film.ts> --out file.png [--only p1,p2] [--json]
  *   open-cut inspect <file.mp4> [--probes n] [--expected seconds] [--strict] [--json]
  *   open-cut archive <film.mjs|film.ts> [--root dir] [--json]
+ *   open-cut scenes <film.mjs|film.ts> --out file.png [--json]
  *   open-cut seams <film.mjs|film.ts> --out file.png [--json]
  *   open-cut at <film.mjs|film.ts> --frame N [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--json]
@@ -414,6 +415,34 @@ if (command === 'at') {
             process.exit(0);
         }
         console.log(`frame ${lookup.frame}: shots ${lookup.shots.join(', ') || '-'}, panels ${lookup.panels.join(', ') || '-'}, cues ${lookup.cues.join(', ') || '-'}`);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    process.exit(0);
+}
+
+if (command === 'scenes') {
+    const script = args[1];
+    if (!script) {
+        fail('scenes requires a film script path', 2);
+    }
+    const outArg = flag(args, '--out');
+    if (outArg === undefined) {
+        fail('scenes requires --out <file.png>', 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    try {
+        const page = film.sceneOverview(path.resolve(outArg));
+        if (args.includes('--json')) {
+            console.log(JSON.stringify(page, null, 2));
+            process.exit(0);
+        }
+        console.log(`scenes: ${page.scenes} scene row(s) -> ${page.path}`);
     }
     catch (error) {
         fail(error instanceof Error ? error.message : String(error), 1);

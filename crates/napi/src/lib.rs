@@ -334,6 +334,25 @@ fn write_seams(ctx: CallContext) -> Result<JsValue> {
     json_to_js(ctx.env(), &json!({ "path": page.path, "cuts": page.cells.len() }))
 }
 
+/// Write a scene overview: one establishing frame per scene with its span and
+/// the shots that use it.
+///
+/// Argument: `{ project, production, out, ...layout }`.
+#[function(js_name = "writeSceneOverview")]
+fn write_scene_overview(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("writeSceneOverview requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let out = arg.get_named("out")?.as_string()?;
+    let options = storyboard_options(arg)?;
+    let page = media::render::write_scene_overview(&project, &production, std::path::Path::new(&out), &options).map_err(core_error)?;
+    json_to_js(ctx.env(), &json!({ "path": page.path, "scenes": page.cells.len() }))
+}
+
 /// Render the film with its subtitle cues burned into the picture.
 ///
 /// Argument: `{ project, production, out, maxChars?, maxLines?, minFrames?,
@@ -759,6 +778,7 @@ register_module![
     write_comparison,
     write_chapters,
     write_seams,
+    write_scene_overview,
     lookup_frame,
     inspect_delivery,
     check_archive,
