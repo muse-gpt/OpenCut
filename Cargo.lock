@@ -24,6 +24,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "boost-collection"
+version = "0.1.0"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
+dependencies = [
+ "boost-collection-macro",
+]
+
+[[package]]
+name = "boost-collection-macro"
+version = "0.1.0"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 3.0.10",
+]
+
+[[package]]
 name = "cfg-if"
 version = "1.0.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -73,7 +91,7 @@ dependencies = [
 [[package]]
 name = "geometry"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry-motion",
  "geometry-types",
@@ -82,7 +100,7 @@ dependencies = [
 [[package]]
 name = "geometry-motion"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry-types",
  "serde",
@@ -91,7 +109,7 @@ dependencies = [
 [[package]]
 name = "geometry-types"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "serde",
 ]
@@ -99,7 +117,7 @@ dependencies = [
 [[package]]
 name = "hardware-program"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "serde",
  "serde_json",
@@ -148,7 +166,7 @@ checksum = "b6d2cec3eae94f9f509c767b45932f1ada8350c4bdb85af2fcab4a3c14807981"
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "media-audio",
  "media-canvas",
@@ -173,7 +191,7 @@ dependencies = [
 [[package]]
 name = "media-audio"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "media-codec",
  "media-dsp",
@@ -186,7 +204,7 @@ dependencies = [
 [[package]]
 name = "media-canvas"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-image",
@@ -196,7 +214,7 @@ dependencies = [
 [[package]]
 name = "media-codec"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "media-image",
  "media-types",
@@ -208,12 +226,12 @@ dependencies = [
 [[package]]
 name = "media-dsp"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 
 [[package]]
 name = "media-harness"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "serde",
 ]
@@ -221,7 +239,7 @@ dependencies = [
 [[package]]
 name = "media-image"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry-types",
  "serde",
@@ -230,7 +248,7 @@ dependencies = [
 [[package]]
 name = "media-layout"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-image",
@@ -242,7 +260,7 @@ dependencies = [
 [[package]]
 name = "media-motion"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-types",
@@ -252,7 +270,7 @@ dependencies = [
 [[package]]
 name = "media-particles"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry-types",
  "media-image",
@@ -262,7 +280,7 @@ dependencies = [
 [[package]]
 name = "media-pixel"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "media-image",
  "media-types",
@@ -272,7 +290,7 @@ dependencies = [
 [[package]]
 name = "media-post"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry-motion",
  "geometry-types",
@@ -287,7 +305,7 @@ dependencies = [
 [[package]]
 name = "media-raster"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-image",
@@ -297,7 +315,7 @@ dependencies = [
 [[package]]
 name = "media-render"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-audio",
@@ -322,7 +340,7 @@ dependencies = [
 [[package]]
 name = "media-scene"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-image",
@@ -335,7 +353,7 @@ dependencies = [
 [[package]]
 name = "media-synthesis"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "media-dsp",
  "media-types",
@@ -345,7 +363,7 @@ dependencies = [
 [[package]]
 name = "media-text"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "fontdue",
  "geometry",
@@ -358,12 +376,12 @@ dependencies = [
 [[package]]
 name = "media-types"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 
 [[package]]
 name = "media-vector"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-types",
@@ -373,8 +391,9 @@ dependencies = [
 [[package]]
 name = "media-voice"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
+ "boost-collection",
  "media-dsp",
  "media-types",
  "serde",
@@ -383,7 +402,7 @@ dependencies = [
 [[package]]
 name = "media-voxel"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=569014f68f24d893b008d32bd05cc4418e05e75d#569014f68f24d893b008d32bd05cc4418e05e75d"
+source = "git+https://github.com/oovm/boost.rs.git?rev=dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f#dbe25f6ac6e114cd6f34f7e0e078acd8a65c4a0f"
 dependencies = [
  "geometry",
  "media-types",
