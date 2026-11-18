@@ -252,6 +252,25 @@ fn write_contact_sheet(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// Reopen a delivered file and report what the decoder actually sees.
+///
+/// Argument: `{ path, probes? }`. Returns frame size, sampled-frame luminance,
+/// frozen neighbours, audio peak/RMS/clipping and a suspect list. Frames are
+/// sampled, not counted; a file that does not decode is an error.
+#[function(js_name = "inspectDelivery")]
+fn inspect_delivery(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("inspectDelivery requires an options object"))?;
+    let path = arg.get_named("path")?.as_string()?;
+    let probes = optional_u32(arg, "probes")?.unwrap_or(8).max(2) as usize;
+    let report = media::render::inspect_delivery(std::path::Path::new(&path), probes, media::types::SAMPLE_RATE).map_err(core_error)?;
+    let value = serde_json::to_value(&report).map_err(|error| Error::new(format!("encode report: {error}")))?;
+    json_to_js(ctx.env(), &value)
+}
+
 /// Write a before/after page for the selected panels.
 ///
 /// Argument: `{ before, project, production, out, only?, ...layout }`. Both
@@ -633,5 +652,6 @@ register_module![
     export_subtitles,
     revise_cue,
     write_comparison,
-    write_chapters
+    write_chapters,
+    inspect_delivery
 ];

@@ -43,6 +43,8 @@ export type {
     BuildInfo,
     CoverCandidate,
     CueRevision,
+    DeliveryAudio,
+    DeliveryReport,
     PreviewResult,
     ProductionCounts,
     ProductionReport,
@@ -63,7 +65,7 @@ export { verifyRender } from './verify.js';
 export type * from './types.js';
 
 import { native } from './native.js';
-import type { AssetDigest, BuildInfo } from './native.js';
+import type { AssetDigest, BuildInfo, DeliveryReport } from './native.js';
 
 /** Native library version reported by the Rust core binding. */
 export function nativeVersion(): string {
@@ -81,4 +83,15 @@ export function nativeBuild(): BuildInfo {
  *  with a render report without translating between hashes. */
 export function assetDigest(path: string): AssetDigest {
     return native.assetDigest({ path });
+}
+
+/**
+ * Reopens a delivered file and reports what the decoder actually sees.
+ *
+ * Frames are sampled at evenly spaced times, so this proves the file decodes
+ * there and is not a full frame count. `suspects` is advisory: a dark or held
+ * scene is reported, not failed.
+ */
+export function inspectDelivery(path: string, probes = 8): DeliveryReport {
+    return native.inspectDelivery({ path, probes });
 }

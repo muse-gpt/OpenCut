@@ -219,6 +219,39 @@ export interface CueRevision {
     lines: { ok: true; lines: string[] } | { ok: false; error: string };
 }
 
+/** One sampled frame read back from a delivered file. */
+export interface SampleReport {
+    index: number;
+    seconds: number;
+    /** Mean luminance in `0..=1`. */
+    mean_luma: number;
+    /** Whether the bytes are identical to the previous sample. */
+    frozen: boolean;
+}
+
+/** Audio facts measured from the delivered file. */
+export interface DeliveryAudio {
+    sample_rate: number;
+    frames: number;
+    seconds: number;
+    peak_db: number;
+    rms_db: number;
+    clipped: number;
+}
+
+/** What the decoder sees when a delivered file is reopened. */
+export interface DeliveryReport {
+    path: string;
+    width: number;
+    height: number;
+    samples: SampleReport[];
+    audio: DeliveryAudio | null;
+    /** Duration the samples covered; `null` when a video-only file has no known duration. */
+    span_seconds: number | null;
+    /** Advisory findings; empty means nothing looked wrong. */
+    suspects: string[];
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
@@ -236,6 +269,7 @@ export interface NativeBinding {
     writeCoverCandidates(options: { project: string; production: string; out: string; count?: number }): { candidates: CoverCandidate[] };
     exportSubtitles(options: { project: string; production: string; format: SubtitleFormat } & SubtitleStyle): SubtitleExport;
     reviseCue(options: { project: string; production: string; cue: string; text: string } & SubtitleStyle): CueRevision;
+    inspectDelivery(options: { path: string; probes?: number }): DeliveryReport;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';
