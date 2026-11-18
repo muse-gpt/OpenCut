@@ -247,6 +247,53 @@ fn write_contact_sheet(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// Export the production's cues as a subtitle file body.
+///
+/// Argument: `{ project, production, format, maxChars?, maxLines?, minFrames?,
+/// maxCps? }`. `format` is `srt` or `vtt`. Returns `{ format, text, cues }`.
+/// Cues are resolved from shot-local to project frames once; a cue that is too
+/// fast to read or needs more lines than the style allows fails instead of
+/// being retimed or shrunk.
+#[function(js_name = "exportSubtitles")]
+fn export_subtitles(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("exportSubtitles requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let production = parse_production(arg)?;
+    let format = match arg.get_named("format")?.as_string()?.as_str() {
+        "srt" => media::scene::SubtitleFormat::Srt,
+        "vtt" => media::scene::SubtitleFormat::WebVtt,
+        other => return Err(Error::new(format!("invalid_input: unknown subtitle format `{other}`"))),
+    };
+    let mut style = media::scene::SubtitleStyle::default();
+    if let Some(value) = optional_u32(arg, "maxChars")? {
+        style.max_chars = value as usize;
+    }
+    if let Some(value) = optional_u32(arg, "maxLines")? {
+        style.max_lines = value as usize;
+    }
+    if let Some(value) = optional_u32(arg, "minFrames")? {
+        style.min_frames = value;
+    }
+    if let Some(value) = optional_f32(arg, "maxCps")? {
+        style.max_cps = value;
+    }
+    let parsed_project: media::scene::Project =
+        serde_json::from_str(&project).map_err(|error| Error::new(format!("invalid_input: {error}")))?;
+    let text = media::scene::export(&parsed_project, &production, &style, format).map_err(core_error)?;
+    json_to_js(
+        ctx.env(),
+        &json!({
+            "format": match format { media::scene::SubtitleFormat::Srt => "srt", media::scene::SubtitleFormat::WebVtt => "vtt" },
+            "text": text,
+            "cues": production.cues.len(),
+        }),
+    )
+}
+
 /// Write a timeline overview: one row per shot, panel ticks and a cue strip.
 ///
 /// Argument: `{ project, production, out, width?, height?, margin?, gap?,
@@ -475,5 +522,6 @@ register_module![
     write_contact_sheet,
     write_timeline,
     write_motion_preview,
-    write_cover_candidates
+    write_cover_candidates,
+    export_subtitles
 ];

@@ -51,6 +51,9 @@ export type {
     StoryboardCell,
     StoryboardOptions,
     StoryboardPage,
+    SubtitleExport,
+    SubtitleFormat,
+    SubtitleStyle,
     TaskPlan,
 } from './native.js';
 export { native } from './native.js';

@@ -13,6 +13,9 @@ import type {
     RenderResult,
     StoryboardOptions,
     StoryboardPage,
+    SubtitleExport,
+    SubtitleFormat,
+    SubtitleStyle,
     TaskPlan,
 } from './native.js';
 import type {
@@ -431,6 +434,20 @@ export class Film {
             out: outDir,
             count,
         }).candidates;
+    }
+
+    /** Exports the declared cues as a subtitle file body.
+     *
+     *  Cues are resolved from shot-local to project frames once; a cue that is
+     *  too fast to read or needs more lines than the style allows throws with
+     *  the cue's handle. */
+    subtitles(format: SubtitleFormat = 'srt', style: SubtitleStyle = {}): SubtitleExport {
+        return native.exportSubtitles({
+            project: JSON.stringify(toWire(this.toProject())),
+            production: JSON.stringify(toWire(this.toProduction())),
+            format,
+            ...style,
+        });
     }
 
     /** Renders one frame into a PNG.

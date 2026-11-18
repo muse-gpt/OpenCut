@@ -184,6 +184,26 @@ export interface CoverCandidate {
     score: number;
 }
 
+/** Subtitle export formats. */
+export type SubtitleFormat = 'srt' | 'vtt';
+
+/** Line-breaking and reading-speed limits for subtitle export. */
+export interface SubtitleStyle {
+    maxChars?: number;
+    maxLines?: number;
+    minFrames?: number;
+    maxCps?: number;
+}
+
+/** One exported subtitle file body. */
+export interface SubtitleExport {
+    format: SubtitleFormat;
+    /** File contents, ready to write. */
+    text: string;
+    /** Number of cues the book declared. */
+    cues: number;
+}
+
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
@@ -197,6 +217,7 @@ export interface NativeBinding {
     writeTimeline(options: { project: string; production: string; out: string } & StoryboardOptions): StoryboardPage;
     writeMotionPreview(options: { project: string; production: string; out: string; scale?: number }): RenderResult;
     writeCoverCandidates(options: { project: string; production: string; out: string; count?: number }): { candidates: CoverCandidate[] };
+    exportSubtitles(options: { project: string; production: string; format: SubtitleFormat } & SubtitleStyle): SubtitleExport;
 }
 
 const PLATFORM_PACKAGE = '@wae/open-cut-win32-x64';
