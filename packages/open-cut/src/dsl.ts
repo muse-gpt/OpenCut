@@ -9,6 +9,7 @@ import type {
     ArchiveReport,
     CoverCandidate,
     CueRevision,
+    FrameLookup,
     PreviewResult,
     ProductionReport,
     RenderOptions,
@@ -450,6 +451,15 @@ export class Film {
             out: outPath,
             ...options,
         });
+    }
+
+    /** Looks up the shot, panel and cue covering one absolute frame.
+     *
+     *  Ranges are shot-local in the book and resolved to absolute frames here,
+     *  so the answer matches the timeline the renderer uses. A frame in a gap
+     *  returns empty lists instead of throwing. */
+    atFrame(frame: number): FrameLookup {
+        return native.lookupFrame({ production: JSON.stringify(toWire(this.toProduction())), frame });
     }
 
     /** Writes a seam page: every cut as its last and first drawn frames.

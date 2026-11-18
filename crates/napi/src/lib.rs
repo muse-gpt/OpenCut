@@ -299,6 +299,23 @@ fn check_archive(ctx: CallContext) -> Result<JsValue> {
     json_to_js(ctx.env(), &value)
 }
 
+/// Look up which shots, panels and cues cover one absolute frame.
+///
+/// Argument: `{ production, frame }`. Returns `{ frame, shots, panels, cues }`. This is the review-page reverse lookup: point at a frame
+/// and get the handles to edit, instead of scanning the whole book.
+#[function(js_name = "lookupFrame")]
+fn lookup_frame(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("lookupFrame requires an options object"))?;
+    let production = parse_production(arg)?;
+    let frame = optional_u32(arg, "frame")?.ok_or_else(|| Error::new("lookupFrame requires a frame index"))?;
+    let value = serde_json::to_value(production.at_frame(frame)).map_err(|error| Error::new(format!("encode lookup: {error}")))?;
+    json_to_js(ctx.env(), &value)
+}
+
 /// Write a seam page: each cut as the last and first drawn frames side by side.
 ///
 /// Argument: `{ project, production, out, ...layout }`.
@@ -742,6 +759,7 @@ register_module![
     write_comparison,
     write_chapters,
     write_seams,
+    lookup_frame,
     inspect_delivery,
     check_archive,
     render_with_subtitles
