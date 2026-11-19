@@ -6,6 +6,11 @@
     "os": ["win32"],
     "cpu": ["x64"],
     "main": "./open-cut.win32-x64.node",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/nyar-os/OpenCut.git",
+        "directory": "packages/open-cut-win32-x64"
+    },
     "files": [
         "open-cut.win32-x64.node",
         "README.md",

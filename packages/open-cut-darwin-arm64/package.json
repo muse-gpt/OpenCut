@@ -6,6 +6,11 @@
     "os": ["darwin"],
     "cpu": ["arm64"],
     "main": "./open-cut.darwin-arm64.node",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/nyar-os/OpenCut.git",
+        "directory": "packages/open-cut-darwin-arm64"
+    },
     "files": [
         "open-cut.darwin-arm64.node",
         "README.md",

@@ -6,6 +6,11 @@
     "os": ["linux"],
     "cpu": ["x64"],
     "main": "./open-cut.linux-x64.node",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/nyar-os/OpenCut.git",
+        "directory": "packages/open-cut-linux-x64"
+    },
     "files": [
         "open-cut.linux-x64.node",
         "README.md",
