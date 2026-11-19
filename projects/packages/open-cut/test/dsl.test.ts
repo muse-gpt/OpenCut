@@ -55,3 +55,37 @@ test('witness ids survive compilation into the production book', () => {
     const book = film.toProduction() as { shots: Array<{ panels: Array<{ witness?: string[] }> }> };
     assert.deepEqual(book.shots[0].panels[0].witness, ['evidence']);
 });
+
+const bed = (volume: number): Film => {
+    const film = new Film({ width: 320, height: 180, fps: 30 });
+    film.scene({ id: 'a', duration: 2, items: [text({ content: 'x' })] });
+    film.audio({ bgm: { volume } });
+    return film;
+};
+
+test('an audio-only change asks for a re-encode, not a re-render', () => {
+    const diff = bed(0.9).changesFrom(bed(0.4));
+    assert.deepEqual(diff.rerender, []);
+    assert.equal(diff.reencode, true);
+    assert.deepEqual(diff.changes.map((change) => `${change.kind} ${change.id} ${change.change}`), ['audio bgm changed']);
+});
+
+test('a delivery change asks for a re-encode', () => {
+    const build = (audio: string): Film => {
+        const film = new Film({ width: 320, height: 180, fps: 30 });
+        film.scene({ id: 'a', duration: 2, items: [text({ content: 'x' })] });
+        film.production({ delivery: [{ name: 'master', container: 'mp4', video: 'h264', audio }] });
+        return film;
+    };
+    const diff = build('aac').changesFrom(build('opus'));
+    assert.deepEqual(diff.rerender, []);
+    assert.equal(diff.reencode, true);
+    assert.deepEqual(diff.changes.map((change) => `${change.kind} ${change.id} ${change.change}`), ['delivery master changed']);
+});
+
+test('an unchanged film asks for neither a re-render nor a re-encode', () => {
+    const diff = bed(0.4).changesFrom(bed(0.4));
+    assert.equal(diff.changed, false);
+    assert.equal(diff.reencode, false);
+    assert.deepEqual(diff.rerender, []);
+});

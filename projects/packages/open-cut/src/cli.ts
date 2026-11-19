@@ -794,6 +794,9 @@ if (command === 'diff') {
     for (const [start, end] of diff.rerender) {
         console.log(`re-render frames ${start}–${end} -> open-cut render ${path.basename(script)} --from ${seconds(start)} --to ${seconds(end)}`);
     }
+    if (diff.reencode) {
+        console.log(`re-encode the deliverable: the audio bed or delivery changed without moving a frame -> open-cut render ${path.basename(script)} --out <master>`);
+    }
     process.exit(0);
 }
 

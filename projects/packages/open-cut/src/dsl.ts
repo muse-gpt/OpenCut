@@ -211,11 +211,11 @@ export function anim(spec: AnimInput): AnimInput {
 
 /** One difference between two builds of a film. */
 export interface FilmChange {
-    kind: 'scene' | 'shot' | 'panel' | 'cue';
+    kind: 'scene' | 'shot' | 'panel' | 'cue' | 'audio' | 'delivery';
     id: string;
     change: 'added' | 'removed' | 'changed' | 'moved';
     /** Absolute half-open frames in the newer film, or `null` when the thing
-     *  no longer exists there. */
+     *  no longer exists there or is not tied to a frame range. */
     range: [number, number] | null;
 }
 
@@ -224,6 +224,9 @@ export interface FilmDiff {
     changes: FilmChange[];
     /** Merged absolute ranges of the newer film that changed, in frame order. */
     rerender: Array<[number, number]>;
+    /** The audio bed or a delivery profile changed: no frame range moved, but
+     *  the delivered file still has to be encoded again. */
+    reencode: boolean;
     changed: boolean;
 }
 
@@ -502,13 +505,17 @@ export class Film {
      *
      *  Scenes compare on their compiled IR with `start` removed, so a pure shift
      *  reads as `moved` instead of `changed`. Shots compare without their
-     *  panels, and panels and cues compare on their own book entries. Ranges are
-     *  absolute frames in this film; removed entries carry `null` because they
-     *  have no home here. */
+     *  panels, and panels and cues compare on their own book entries. The audio
+     *  bed and delivery profiles compare too: they change the delivered file
+     *  without moving a frame, so they set `reencode` instead of `rerender`.
+     *  Ranges are absolute frames in this film; removed entries carry `null`
+     *  because they have no home here. */
     changesFrom(before: Film): FilmDiff {
         const changes: FilmChange[] = [];
-        const afterScenes = (toWire(this.toProject()) as { scenes?: Array<Record<string, unknown>> }).scenes ?? [];
-        const beforeScenes = (toWire(before.toProject()) as { scenes?: Array<Record<string, unknown>> }).scenes ?? [];
+        const afterProject = toWire(this.toProject()) as Record<string, unknown>;
+        const beforeProject = toWire(before.toProject()) as Record<string, unknown>;
+        const afterScenes = (afterProject['scenes'] as Array<Record<string, unknown>> | undefined) ?? [];
+        const beforeScenes = (beforeProject['scenes'] as Array<Record<string, unknown>> | undefined) ?? [];
         const sceneKey = (scene: Record<string, unknown>, index: number): string => String(scene['id'] ?? `scene-${index}`);
         const afterSceneMap = new Map(afterScenes.map((scene, index) => [sceneKey(scene, index), scene]));
         const beforeSceneMap = new Map(beforeScenes.map((scene, index) => [sceneKey(scene, index), scene]));
@@ -635,6 +642,44 @@ export class Film {
             }
         }
 
+        // The audio bed and the delivery profiles change the file without moving
+        // a picture frame, so they report themselves but ask for a re-encode.
+        const bedOf = (project: Record<string, unknown>): Record<string, unknown> => {
+            const audio = project['audio'];
+            return audio === null || typeof audio !== 'object' ? {} : audio as Record<string, unknown>;
+        };
+        const afterBed = bedOf(afterProject);
+        const beforeBed = bedOf(beforeProject);
+        let reencode = false;
+        for (const key of new Set([...Object.keys(afterBed), ...Object.keys(beforeBed)])) {
+            const after = afterBed[key] ?? null;
+            const previously = beforeBed[key] ?? null;
+            if (stableJson(after) === stableJson(previously)) {
+                continue;
+            }
+            reencode = true;
+            changes.push({ kind: 'audio', id: key, change: previously === null ? 'added' : after === null ? 'removed' : 'changed', range: null });
+        }
+
+        const deliveryOf = (book: unknown): Map<string, unknown> => {
+            const delivery = (book as { delivery?: unknown[] }).delivery;
+            return new Map((Array.isArray(delivery) ? delivery : []).map((entry, index) => {
+                const profile = entry as Record<string, unknown>;
+                return [String(profile['name'] ?? `delivery-${index}`), profile];
+            }));
+        };
+        const afterDelivery = deliveryOf(this.toProduction());
+        const beforeDelivery = deliveryOf(before.toProduction());
+        for (const id of new Set([...afterDelivery.keys(), ...beforeDelivery.keys()])) {
+            const after = afterDelivery.get(id);
+            const previously = beforeDelivery.get(id);
+            if (after !== undefined && previously !== undefined && stableJson(after) === stableJson(previously)) {
+                continue;
+            }
+            reencode = true;
+            changes.push({ kind: 'delivery', id, change: after === undefined ? 'removed' : previously === undefined ? 'added' : 'changed', range: null });
+        }
+
         const blocks = changes
             .filter((change): change is FilmChange & { range: [number, number] } => change.range !== null)
             .map((change) => change.range)
@@ -649,7 +694,7 @@ export class Film {
                 rerender.push([block[0], block[1]]);
             }
         }
-        return { changes, rerender, changed: changes.length > 0 };
+        return { changes, rerender, reencode, changed: changes.length > 0 };
     }
 
     /** Writes one contact sheet: the middle frame of every panel in a grid. */
