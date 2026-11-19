@@ -1,0 +1,150 @@
+<template>
+    <SiteShell page="features">
+        <div class="page-head">
+            <span class="kicker">Capability sheet</span>
+            <h1>Features</h1>
+            <p class="lead">
+                The authoring surface is small on purpose: typed items, one scene
+                IR and one render pipeline. Everything below is implemented in
+                the DSL or the native binding today.
+            </p>
+        </div>
+
+        <section class="section">
+            <h2>Authoring DSL <span class="tag">TypeScript</span></h2>
+            <ul>
+                <li><code>Film</code> sets canvas size, design cards and audio, then collects scenes.</li>
+                <li>
+                    <code>Scene</code> holds timed items: <code>text</code>,
+                    <code>code</code>, <code>counter</code>, <code>shape</code>,
+                    <code>image</code>, <code>video</code>, <code>chart</code>,
+                    <code>callout</code>, <code>path</code>, <code>layer</code> and
+                    <code>instance</code>.
+                </li>
+                <li>
+                    Layout helpers include <code>card</code>, <code>footnote</code>,
+                    <code>progress</code>, <code>bands</code>, <code>glow</code> and
+                    <code>grain</code>.
+                </li>
+                <li>Items are plain values, so films compose with ordinary functions, loops and data.</li>
+                <li>Timing is written in seconds; the binding converts to frames.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Time and motion</h2>
+            <ul>
+                <li>Every animated item gets an <code>id</code>, an <code>anim</code> window and optional <code>follow</code> timing.</li>
+                <li>Evaluation happens in the shared <code>media.motion</code> stage, not in the authoring code.</li>
+                <li>Entrances and exits are expressed as time windows, so a scene stays a single serializable value.</li>
+                <li>
+                    Only motion fields are animated. Arbitrary property curves
+                    are not supported, and the roadmap says so instead of
+                    pretending otherwise.
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Sound as code</h2>
+            <ul>
+                <li>Eight effect families: whoosh, impact, riser, tick, glitch, sub, ambience and sparkle.</li>
+                <li>Seventeen instruments — nine drums and eight melodic voices — addressed by MIDI note.</li>
+                <li>Eight drum grooves, or sixteen step velocities per bar when a preset is not enough.</li>
+                <li>
+                    Singing is synthesized from five vowels and an onset class;
+                    the same song and seed stay byte-identical.
+                </li>
+                <li>
+                    Narration is a reserved slot for a PCM16 WAV you supply, not
+                    a generator.
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Design tokens</h2>
+            <ul>
+                <li>Semantic color roles are declared with <code>colorToken('ink')</code> and friends.</li>
+                <li>A project design card sets the defaults; a scene card overrides individual roles.</li>
+                <li>A role marked <code>locked</code> cannot be overridden — the mismatch is an explicit error, never a silent priority.</li>
+                <li>Unknown roles, duplicate roles and non-color values fail with the structural path.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Media and preflight</h2>
+            <ul>
+                <li>Images are decoded through WIC; video frames and audio come through a Media Foundation source reader, cached per path.</li>
+                <li><code>fit</code> selects <code>contain</code>, <code>cover</code> or <code>stretch</code>; <code>radius</code> clips to rounded corners.</li>
+                <li><code>srcIn</code> starts a clip at a chosen source frame instead of the beginning.</li>
+                <li>
+                    Required sources are checked before the encoder opens. A
+                    missing or undecodable asset aborts with a located error;
+                    intentional empty slots are declared with
+                    <code>required: false</code>.
+                </li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Reproducible runs</h2>
+            <ul>
+                <li><code>open-cut build</code> prints the native version, the exact source revision and whether the tree was dirty.</li>
+                <li><code>RenderStats</code> reports the frame range, fonts actually loaded, a project hash and empty optional slots.</li>
+                <li><code>--from</code> and <code>--to</code> export an interval renumbered from zero.</li>
+                <li><code>--cancel-file</code> stops between frames and keeps the previous output intact.</li>
+            </ul>
+        </section>
+
+        <section class="section">
+            <h2>Platform honesty</h2>
+            <p>
+                Prebuilt natives exist for Windows x64, Linux x64/arm64 and macOS
+                x64/arm64. MP4 encoding runs through Windows Media Foundation, so
+                the complete render chain needs Windows; N/KN editions require
+                the Media Feature Pack. The audio codec is negotiated: AAC is
+                preferred and the encoder falls back to FLAC when no AAC encoder
+                is registered.
+            </p>
+            <p>
+                Not supported today: scene transitions (cuts are hard), multitrack
+                compositing (items paint in list order, scene by scene), narration
+                synthesis, arbitrary property curves, and WASM or browser
+                execution.
+            </p>
+        </section>
+
+        <p class="cta-line">
+            Wondering how the pieces connect?
+            <Link to="WorkflowPage">
+                Follow the render pipeline
+            </Link>
+        </p>
+    </SiteShell>
+</template>
+
+<style>
+.section h2 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.section li code {
+    white-space: nowrap;
+}
+</style>
+
+<script client>
+export default class FeaturesPage {
+    static meta() {
+        return {
+            title: "Features — OpenCut",
+            description:
+                "The OpenCut DSL, time-based motion, procedural sound, design tokens, media preflight and deterministic MP4 output — with explicit limits.",
+        };
+    }
+}
+</script>

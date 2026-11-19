@@ -1,0 +1,300 @@
+<template>
+    <SiteShell page="workflow">
+        <div class="page-head">
+            <span class="kicker">Pipeline</span>
+            <h1>How a film becomes an MP4</h1>
+            <p class="lead">
+                Authoring, evaluation, preflight, rasterization, sound and
+                encoding are separate stages with one owner each. No stage is
+                allowed to quietly skip another.
+            </p>
+        </div>
+
+        <div class="pipe" aria-label="Render pipeline">
+            <span>TypeScript DSL</span>
+            <span class="pipe__arrow">→</span>
+            <span>scene IR</span>
+            <span class="pipe__arrow">→</span>
+            <span>motion + preflight</span>
+            <span class="pipe__arrow">→</span>
+            <span>raster · text · audio</span>
+            <span class="pipe__arrow">→</span>
+            <span>H.264 / AAC</span>
+            <span class="pipe__arrow">→</span>
+            <span class="pipe__end">MP4</span>
+        </div>
+
+        <ol class="steps">
+            <li>
+                <h2>Write the film</h2>
+                <p>
+                    Describe the canvas, the design roles and the scenes in one
+                    TypeScript file. A scene is a value, not a project file.
+                </p>
+                <pre><code>const film = new Film({ width: 1280, height: 720 });</code></pre>
+            </li>
+            <li>
+                <h2>Compose the scenes</h2>
+                <p>
+                    Items are laid out in list order inside each scene. Durations
+                    and offsets are written in seconds; the binding converts to
+                    frames.
+                </p>
+            </li>
+            <li>
+                <h2>Animate with time windows</h2>
+                <p>
+                    Give an item an <code>id</code>, then attach <code>anim</code> windows and <code>follow</code> timing. Evaluation stays in
+                    the shared motion stage.
+                </p>
+            </li>
+            <li>
+                <h2>Add sound</h2>
+                <p>
+                    Grooves, melodic instruments, effects and singing are all
+                    code. Narration is a PCM16 WAV mixed into its reserved slot.
+                </p>
+                <pre><code>film.audio({ patterns: [{ preset: 'four-on-floor', bpm: 120 }] });</code></pre>
+            </li>
+            <li>
+                <h2>Preflight the media</h2>
+                <p>
+                    Required images, video and audio are resolved before the
+                    encoder opens. A missing or undecodable asset stops the run
+                    with a located error.
+                </p>
+            </li>
+            <li>
+                <h2>Preview a frame</h2>
+                <p>
+                    Render a single frame to check composition, fonts and color
+                    before committing to the full encode.
+                </p>
+                <pre><code>open-cut preview films/demo.ts --frame 90 -o out/frame.png</code></pre>
+            </li>
+            <li>
+                <h2>Render and trace the result</h2>
+                <p>
+                    Encode the whole film, then ask the binary which native
+                    version and source revision produced it. The same spec and
+                    seed should reproduce the same bytes.
+                </p>
+                <pre><code>open-cut render films/demo.ts -o out/demo.mp4</code></pre>
+                <pre><code>open-cut build</code></pre>
+            </li>
+        </ol>
+
+        <section class="section">
+            <h2>Where each stage lives</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Stage</th>
+                            <th>Owner</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Authoring</td>
+                            <td>TypeScript DSL: <code>Film</code>, <code>Scene</code> and item constructors.</td>
+                        </tr>
+                        <tr>
+                            <td>IR</td>
+                            <td>Neutral <code>media.scene</code> — one serializable project shape.</td>
+                        </tr>
+                        <tr>
+                            <td>Motion</td>
+                            <td>Neutral <code>media.motion</code> — ids, animation keys, follow windows.</td>
+                        </tr>
+                        <tr>
+                            <td>Import</td>
+                            <td>Neutral <code>media.codec</code> — WIC images, Media Foundation video and audio, cached per path.</td>
+                        </tr>
+                        <tr>
+                            <td>Raster and text</td>
+                            <td>Neutral <code>media.raster</code> + <code>media.text</code> — real font rasterization with per-glyph fallback.</td>
+                        </tr>
+                        <tr>
+                            <td>Audio</td>
+                            <td>Neutral <code>media.audio</code>, <code>media.synthesis</code> and <code>media.voice</code>.</td>
+                        </tr>
+                        <tr>
+                            <td>Encode</td>
+                            <td>Neutral <code>media.codec</code> — H.264 plus negotiated AAC or FLAC through the Media Foundation sink writer.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <p class="cta-line">
+            The repository owns the authoring surface and the binding — never a
+            second renderer. What runs today is listed in the
+            <Link to="RoadmapPage">roadmap</Link>.
+        </p>
+    </SiteShell>
+</template>
+
+<style>
+.pipe {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-top: 30px;
+    padding: 16px 18px;
+    border: 1px solid var(--oc-line);
+    border-radius: var(--oc-radius);
+    background: var(--oc-surface);
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 12px;
+}
+
+.pipe span {
+    padding: 4px 8px;
+    border-radius: 5px;
+    background: var(--oc-surface-2);
+    color: var(--oc-muted);
+}
+
+.pipe .pipe__arrow {
+    padding: 0;
+    background: none;
+    color: var(--oc-line);
+}
+
+.pipe .pipe__end {
+    background: var(--oc-accent);
+    color: var(--oc-accent-ink);
+    font-weight: 600;
+}
+
+.steps {
+    counter-reset: step;
+    display: grid;
+    gap: 18px;
+    margin: 36px 0 0;
+    padding: 0;
+    list-style: none;
+}
+
+.steps li {
+    position: relative;
+    padding: 24px 24px 24px 74px;
+    border: 1px solid var(--oc-line);
+    border-radius: var(--oc-radius);
+    background: var(--oc-surface);
+    counter-increment: step;
+}
+
+.steps li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 24px;
+    top: 24px;
+    color: var(--oc-accent);
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 14px;
+    letter-spacing: 0.08em;
+}
+
+.steps h2 {
+    margin: 0 0 6px;
+    font-size: 21px;
+}
+
+.steps p {
+    margin: 0 0 12px;
+    color: var(--oc-muted);
+    font-size: 15px;
+}
+
+.steps p:last-child {
+    margin-bottom: 0;
+}
+
+.steps pre {
+    margin-top: 10px;
+}
+
+.steps code {
+    white-space: nowrap;
+}
+
+.table-wrap {
+    margin-top: 16px;
+    overflow-x: auto;
+    border: 1px solid var(--oc-line);
+    border-radius: var(--oc-radius);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--oc-line);
+    background: var(--oc-surface-2);
+    color: var(--oc-muted);
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+td {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--oc-line);
+    vertical-align: top;
+}
+
+tr:last-child td {
+    border-bottom: 0;
+}
+
+td:first-child {
+    width: 150px;
+    color: var(--oc-ink);
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+td code {
+    white-space: nowrap;
+}
+
+@media (max-width: 620px) {
+    .steps li {
+        padding: 20px;
+    }
+
+    .steps li::before {
+        position: static;
+        display: block;
+        margin-bottom: 6px;
+    }
+
+    td:first-child {
+        width: auto;
+        white-space: normal;
+    }
+}
+</style>
+
+<script client>
+export default class WorkflowPage {
+    static meta() {
+        return {
+            title: "Workflow — OpenCut",
+            description:
+                "From a TypeScript film spec through scene IR, motion, preflight, rasterization and sound to a traced MP4 render.",
+        };
+    }
+}
+</script>

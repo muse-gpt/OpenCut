@@ -1,0 +1,146 @@
+<template>
+    <header class="site-header">
+        <div class="site-header__inner">
+            <Link to="IndexPage" class="brand">
+                <span class="brand__mark">OC</span>
+                <span class="brand__name">OpenCut</span>
+            </Link>
+            <nav aria-label="Primary" class="nav">
+                <Link to="IndexPage" data-nav="home" :data-active="activeId === 'home' ? 'true' : 'false'">
+                    Home
+                </Link>
+                <Link to="FeaturesPage" data-nav="features" :data-active="activeId === 'features' ? 'true' : 'false'">
+                    Features
+                </Link>
+                <Link to="WorkflowPage" data-nav="workflow" :data-active="activeId === 'workflow' ? 'true' : 'false'">
+                    Workflow
+                </Link>
+                <Link to="RoadmapPage" data-nav="roadmap" :data-active="activeId === 'roadmap' ? 'true' : 'false'">
+                    Roadmap
+                </Link>
+            </nav>
+            <a class="nav-source" href="https://github.com/nyar-os/OpenCut" rel="noopener">
+                Source
+            </a>
+        </div>
+    </header>
+</template>
+
+<style>
+.site-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(11, 14, 19, 0.88);
+    border-bottom: 1px solid var(--oc-line);
+    backdrop-filter: blur(10px);
+}
+
+.site-header__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    max-width: var(--oc-maxw);
+    margin: 0 auto;
+    padding: 14px 24px;
+}
+
+.brand {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--oc-ink);
+}
+
+.brand:hover {
+    text-decoration: none;
+}
+
+.brand__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: var(--oc-accent);
+    color: var(--oc-accent-ink);
+    font-family: "Cascadia Code", "Consolas", monospace;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.brand__name {
+    font-weight: 600;
+    font-size: 18px;
+    letter-spacing: -0.01em;
+}
+
+.nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px;
+}
+
+.nav a {
+    color: var(--oc-muted);
+    font-size: 15px;
+}
+
+.nav a:hover {
+    color: var(--oc-ink);
+    text-decoration: none;
+}
+
+.nav a[data-active="true"] {
+    color: var(--oc-accent);
+}
+
+.nav-source {
+    color: var(--oc-ink);
+    font-size: 14px;
+    padding: 6px 14px;
+    border: 1px solid var(--oc-line);
+    border-radius: 999px;
+}
+
+.nav-source:hover {
+    border-color: var(--oc-accent);
+    text-decoration: none;
+}
+
+@media (max-width: 760px) {
+    .site-header__inner {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .nav-source {
+        display: none;
+    }
+}
+</style>
+
+<script client>
+const NAV_BY_PATH = {
+    "/": "home",
+    "/features": "features",
+    "/workflow": "workflow",
+    "/roadmap": "roadmap",
+};
+
+export default class SiteHeader {
+    public activeId: string = "";
+
+    onMount() {
+        this.resolveActive();
+    }
+
+    resolveActive() {
+        if (typeof window === "undefined" || !window.location) return;
+        const path = (window.location.pathname || "/").replace(/\/+$/, "") || "/";
+        this.activeId = NAV_BY_PATH[path] ?? "";
+    }
+}
+</script>
