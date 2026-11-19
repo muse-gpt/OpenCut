@@ -1,0 +1,14 @@
+{
+    "name": "@wae/open-cut-linux-arm64",
+    "version": "0.0.1",
+    "description": "OpenCut native addon for Linux arm64",
+    "license": "Apache-2.0",
+    "os": ["linux"],
+    "cpu": ["arm64"],
+    "main": "./open-cut.linux-arm64.node",
+    "files": [
+        "open-cut.linux-arm64.node",
+        "README.md",
+        "License.md"
+    ]
+}

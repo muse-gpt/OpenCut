@@ -1,0 +1,14 @@
+{
+    "name": "@wae/open-cut-darwin-x64",
+    "version": "0.0.1",
+    "description": "OpenCut native addon for macOS x64",
+    "license": "Apache-2.0",
+    "os": ["darwin"],
+    "cpu": ["x64"],
+    "main": "./open-cut.darwin-x64.node",
+    "files": [
+        "open-cut.darwin-x64.node",
+        "README.md",
+        "License.md"
+    ]
+}

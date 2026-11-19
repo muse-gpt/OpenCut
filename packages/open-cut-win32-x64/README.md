@@ -3,8 +3,8 @@
 Prebuilt native artifact for Windows x64. **Not a public import target.**
 
 Pulled automatically when installing `@wae/open-cut` on matching hosts. MP4
-encoding runs through Media Foundation, so this is the only platform sidecar
-the package ships today.
+encoding runs through Media Foundation, so this is the only platform where the
+full render path is available today.
 
 ## Example
 

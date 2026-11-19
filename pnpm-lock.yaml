@@ -24,9 +24,29 @@ importers:
         specifier: ^5.9.2
         version: 5.9.3
     optionalDependencies:
+      '@wae/open-cut-darwin-arm64':
+        specifier: workspace:*
+        version: link:../open-cut-darwin-arm64
+      '@wae/open-cut-darwin-x64':
+        specifier: workspace:*
+        version: link:../open-cut-darwin-x64
+      '@wae/open-cut-linux-arm64':
+        specifier: workspace:*
+        version: link:../open-cut-linux-arm64
+      '@wae/open-cut-linux-x64':
+        specifier: workspace:*
+        version: link:../open-cut-linux-x64
       '@wae/open-cut-win32-x64':
         specifier: workspace:*
         version: link:../open-cut-win32-x64
+
+  packages/open-cut-darwin-arm64: {}
+
+  packages/open-cut-darwin-x64: {}
+
+  packages/open-cut-linux-arm64: {}
+
+  packages/open-cut-linux-x64: {}
 
   packages/open-cut-win32-x64: {}
 

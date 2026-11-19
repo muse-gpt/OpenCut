@@ -38,6 +38,10 @@
         "directory": "packages/open-cut"
     },
     "optionalDependencies": {
+        "@wae/open-cut-darwin-arm64": "workspace:*",
+        "@wae/open-cut-darwin-x64": "workspace:*",
+        "@wae/open-cut-linux-arm64": "workspace:*",
+        "@wae/open-cut-linux-x64": "workspace:*",
         "@wae/open-cut-win32-x64": "workspace:*"
     },
     "devDependencies": {

@@ -12,7 +12,7 @@ is required.
 |---|---|
 | `crates/napi` | Node-API surface (`renderProject`, `previewFrame`, `build`) over the pinned media core |
 | `packages/open-cut` | TypeScript DSL authoring surface and the `open-cut` CLI |
-| `packages/open-cut-win32-x64` | Staged `.node` addon for Windows x64 |
+| `packages/open-cut-<platform>-<arch>` | Staged `.node` addon per host (win32/linux/darwin × x64/arm64) |
 | `films` | Reference films written against the DSL |
 
 The scene IR, motion evaluation, raster, text, audio synthesis, codecs and the
@@ -37,9 +37,10 @@ node packages/open-cut/dist/cli.js preview films/demo.ts --frame 90 --out out/fr
 node packages/open-cut/dist/cli.js build      # native version, source revision, profile
 ```
 
-The native binding is published for Windows x64 only. Media Foundation is
-present on all mainstream Windows editions; N/KN editions require the Media
-Feature Pack.
+The native binding is published for Windows x64, Linux x64/arm64 and macOS
+x64/arm64. MP4 encoding and media import still run through Media Foundation,
+so the full render path needs Windows; Media Foundation is present on all
+mainstream Windows editions, and N/KN editions require the Media Feature Pack.
 
 ## Authoring surface
 

@@ -1,0 +1,14 @@
+{
+    "name": "@wae/open-cut-linux-x64",
+    "version": "0.0.1",
+    "description": "OpenCut native addon for Linux x64",
+    "license": "Apache-2.0",
+    "os": ["linux"],
+    "cpu": ["x64"],
+    "main": "./open-cut.linux-x64.node",
+    "files": [
+        "open-cut.linux-x64.node",
+        "README.md",
+        "License.md"
+    ]
+}
