@@ -14,7 +14,7 @@
  * 运行:node --experimental-strip-types films/teaser.ts teaser.mp4
  */
 import { pathToFileURL } from 'node:url';
-import { Film, bands, code, grain, path, shape, text } from '../../packages/open-cut/dist/index.js';
+import { Film, bands, code, grain, path, shape, text } from '@wae/open-cut';
 
 const INK = '#e9f0fb';
 const ACCENT = '#7aa2ff';

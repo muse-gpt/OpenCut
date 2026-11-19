@@ -7,7 +7,7 @@
  * 运行:node --experimental-strip-types films/media-demo.ts demo-media.mp4
  */
 import { pathToFileURL } from 'node:url';
-import { Film, card, footnote, image, progress, text, video } from '../../packages/open-cut/dist/index.js';
+import { Film, card, footnote, image, progress, text, video } from '@wae/open-cut';
 
 const TITLE = '#e6eefa';
 const SUB = '#8fa3c8';

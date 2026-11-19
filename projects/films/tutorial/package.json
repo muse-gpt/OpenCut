@@ -1,5 +1,9 @@
 {
     "name": "@wae/open-cut-films-tutorial",
     "private": true,
-    "type": "module"
+    "type": "module",
+    "description": "Tutorial films rendered from the OpenCut DSL",
+    "dependencies": {
+        "@wae/open-cut": "workspace:*"
+    }
 }

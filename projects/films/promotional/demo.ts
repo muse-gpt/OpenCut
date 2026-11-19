@@ -8,7 +8,7 @@
  * 运行:node --experimental-strip-types films/demo.ts
  */
 import { pathToFileURL } from 'node:url';
-import { Film, card, code, counter, footnote, progress, text } from '../../packages/open-cut/dist/index.js';
+import { Film, card, code, counter, footnote, progress, text } from '@wae/open-cut';
 
 const TITLE = '#e6eefa';
 const SUB = '#8fa3c8';

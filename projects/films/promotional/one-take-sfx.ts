@@ -11,7 +11,7 @@ import { createRequire } from 'node:module';
 import { existsSync, mkdirSync } from 'node:fs';
 import nodePath from 'node:path';
 import { pathToFileURL } from 'node:url';
-import { Film, bands, code, glow, grain, layer, path, shape, text } from '../../packages/open-cut/dist/index.js';
+import { Film, bands, code, glow, grain, layer, path, shape, text } from '@wae/open-cut';
 
 const require = createRequire(import.meta.url);
 

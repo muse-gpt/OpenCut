@@ -10,7 +10,7 @@
  * 运行:node --experimental-strip-types films/groove.ts groove.mp4
  */
 import { pathToFileURL } from 'node:url';
-import { Film, bands, grain, shape, text } from '../../packages/open-cut/dist/index.js';
+import { Film, bands, grain, shape, text } from '@wae/open-cut';
 
 const film = new Film({ width: 1280, height: 720, fps: 30 });
 const ACCENT = '#7aa2ff';
