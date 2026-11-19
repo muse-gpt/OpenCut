@@ -35,6 +35,29 @@
                 <p class="rail-empty" v-if="session && !scenes.length">工程没有声明场景。</p>
                 <p class="rail-empty" v-if="!session">正在读取工程…</p>
 
+                <h2 v-if="session">镜头</h2>
+                <div class="shot" v-for="shot in shots" :key="shot.id">
+                    <button type="button" class="shot-head" :data-shot="shot.id" @click="pickShot">
+                        <span class="shot-name">{{ shot.id }}<span class="lock" v-if="shot.locked">锁</span></span>
+                        <span class="scene-range mono" v-if="shot.range">{{ shot.range[0] }}–{{ shot.range[1] }}</span>
+                        <span class="scene-range mono bad" v-else>缺少场景</span>
+                    </button>
+                    <button
+                        type="button"
+                        class="panel"
+                        v-for="panel in shot.panels"
+                        :key="panel.id"
+                        :data-shot="shot.id"
+                        :data-panel="panel.id"
+                        @click="pickPanel"
+                    >
+                        <span>{{ panel.id }}</span>
+                        <span class="scene-range mono" v-if="panel.absolute">{{ panel.absolute[0] }}–{{ panel.absolute[1] }}</span>
+                        <span class="scene-range mono bad" v-else>无区间</span>
+                    </button>
+                </div>
+                <p class="rail-empty" v-if="session && !shots.length">生产册没有镜头。</p>
+
                 <h2 v-if="session">生产册</h2>
                 <dl class="counts" v-if="session">
                     <div><dt>镜头</dt><dd>{{ session.production.shots }}</dd></div>
@@ -72,6 +95,30 @@
                         {{ rendering ? '渲染中…' : '渲染区间' }}
                     </button>
                     <span class="hint mono" v-if="session">{{ rangeHint }}</span>
+                </div>
+
+                <div class="evidence" v-if="evidence">
+                    <div class="evidence-head">
+                        <strong>{{ evidence.shotId }}</strong>
+                        <span class="pill mono">{{ evidence.panelId }}</span>
+                        <span class="dim mono" v-if="evidence.range">{{ evidence.range[0] }}–{{ evidence.range[1] }} 帧</span>
+                        <span class="spacer"></span>
+                        <button type="button" class="btn" @click="playEvidence">渲染这段</button>
+                    </div>
+                    <dl class="evidence-fields">
+                        <div><dt>必须看到</dt><dd :class="evidence.purpose ? '' : 'dim'">{{ evidence.purpose || '未写证据' }}</dd></div>
+                        <div><dt>画面</dt><dd :class="evidence.composition ? '' : 'dim'">{{ evidence.composition || '未写构图' }}</dd></div>
+                        <div v-if="evidence.dialogue"><dt>台词</dt><dd>{{ evidence.dialogue }}</dd></div>
+                        <div v-if="evidence.camera"><dt>运镜</dt><dd>{{ evidence.camera }}</dd></div>
+                        <div v-if="evidence.sound"><dt>声音</dt><dd>{{ evidence.sound }}</dd></div>
+                        <div v-if="evidence.notes.length"><dt>备注</dt><dd>{{ evidence.notes.join(' · ') }}</dd></div>
+                    </dl>
+                    <div class="evidence-cues" v-if="evidence.cues.length">
+                        <span class="dim">字幕</span>
+                        <p class="mono" v-for="cue in evidence.cues" :key="cue.id">
+                            {{ cue.absolute ? cue.absolute[0] + '–' + cue.absolute[1] : '?' }} {{ cue.text }}
+                        </p>
+                    </div>
                 </div>
 
                 <div class="result" v-if="result">
@@ -242,6 +289,103 @@
     color: var(--oc-muted);
     font-size: 11px;
     white-space: nowrap;
+}
+
+.scene-range.bad {
+    color: var(--oc-danger);
+}
+
+.shot {
+    margin: 0 0 6px;
+}
+
+.shot-head,
+.panel {
+    display: flex;
+    width: 100%;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 5px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--oc-ink);
+    text-align: left;
+}
+
+.shot-head:hover,
+.panel:hover {
+    border-color: var(--oc-line);
+    background: var(--oc-surface-2);
+}
+
+.shot-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.lock {
+    margin-left: 6px;
+    padding: 0 4px;
+    border: 1px solid var(--oc-line);
+    border-radius: 4px;
+    color: var(--oc-muted);
+    font-size: 10px;
+}
+
+.panel {
+    padding-left: 20px;
+    color: var(--oc-muted);
+    font-size: 12px;
+}
+
+.evidence {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    border: 1px solid var(--oc-line);
+    border-radius: 8px;
+    background: var(--oc-surface);
+}
+
+.evidence-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.evidence-fields {
+    display: grid;
+    margin: 6px 0 0;
+    gap: 2px;
+}
+
+.evidence-fields div {
+    display: flex;
+    gap: 10px;
+}
+
+.evidence-fields dt {
+    flex: 0 0 4.5rem;
+    color: var(--oc-muted);
+}
+
+.evidence-fields dd {
+    margin: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+
+.evidence-cues {
+    margin-top: 6px;
+}
+
+.evidence-cues p {
+    margin: 2px 0 0;
+    color: var(--oc-muted);
+    font-size: 12px;
 }
 
 .rail-empty {
@@ -419,6 +563,9 @@ export default class WorkbenchPage {
     statusText = "等待原生桥";
     session = null;
     scenes = [];
+    shots = [];
+    cues = [];
+    evidence = null;
     error = "";
     rendering = false;
     progressDone = 0;
@@ -489,6 +636,9 @@ export default class WorkbenchPage {
         if (data.schema === "open-cut.session/v0") {
             this.session = data;
             this.scenes = Array.isArray(data.project.scenes) ? data.project.scenes : [];
+            this.shots = data.production && Array.isArray(data.production.shotList) ? data.production.shotList : [];
+            this.cues = data.production && Array.isArray(data.production.cueList) ? data.production.cueList : [];
+            this.evidence = null;
             this.startFrame = 0;
             this.endFrame = data.project.durationFrames;
             this.scale = data.preview && data.preview.scale ? data.preview.scale : 0.5;
@@ -549,6 +699,59 @@ export default class WorkbenchPage {
         this.startFrame = scene.range[0];
         this.endFrame = scene.range[1];
         this.syncRange();
+    }
+
+    pickShot(event) {
+        const dataset = event && event.currentTarget ? event.currentTarget.dataset : null;
+        const shot = this.shots.find((item) => item.id === (dataset ? dataset.shot : ""));
+        if (!shot) return;
+        this.evidence = null;
+        if (!shot.range) {
+            this.error = `镜头 ${shot.id} 引用的场景 ${shot.scene} 不在工程里。`;
+            return;
+        }
+        this.error = "";
+        this.startFrame = shot.range[0];
+        this.endFrame = shot.range[1];
+        this.syncRange();
+    }
+
+    pickPanel(event) {
+        const dataset = event && event.currentTarget ? event.currentTarget.dataset : null;
+        const shot = this.shots.find((item) => item.id === (dataset ? dataset.shot : ""));
+        if (!shot) return;
+        const panel = shot.panels.find((item) => item.id === (dataset ? dataset.panel : ""));
+        if (!panel) return;
+        if (!panel.absolute) {
+            this.error = `面板 ${panel.id} 没有可渲染的绝对区间：镜头 ${shot.id} 的场景 ${shot.scene} 不在工程里。`;
+            return;
+        }
+        this.error = "";
+        this.startFrame = panel.absolute[0];
+        this.endFrame = panel.absolute[1];
+        this.syncRange();
+        const cues = this.cues.filter((cue) => cue.shot === shot.id && cue.absolute && cue.absolute[0] < panel.absolute[1] && cue.absolute[1] > panel.absolute[0]);
+        this.evidence = {
+            shotId: shot.id,
+            panelId: panel.id,
+            range: panel.absolute,
+            purpose: panel.purpose,
+            composition: panel.composition,
+            dialogue: panel.dialogue,
+            camera: panel.camera,
+            sound: panel.sound,
+            notes: panel.notes,
+            cues,
+        };
+        this.statusText = `已定位面板 ${panel.id}`;
+    }
+
+    playEvidence() {
+        if (!this.evidence || !this.evidence.range) return;
+        this.startFrame = this.evidence.range[0];
+        this.endFrame = this.evidence.range[1];
+        this.syncRange();
+        this.renderRange();
     }
 
     wholeFilm() {
