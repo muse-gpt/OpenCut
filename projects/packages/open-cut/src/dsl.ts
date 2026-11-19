@@ -600,7 +600,8 @@ export class Film {
             const range = after === undefined
                 ? null
                 : ((): [number, number] | null => {
-                    const scene = sceneRangeOf(after.shot);
+                    const shot = afterShots.get(after.shot);
+                    const scene = shot === undefined ? null : sceneRangeOf(shot.scene);
                     return scene === null ? null : [scene[0] + after.panel.range[0], scene[0] + after.panel.range[1]];
                 })();
             if (!after) {

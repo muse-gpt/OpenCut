@@ -56,6 +56,18 @@ test('witness ids survive compilation into the production book', () => {
     assert.deepEqual(book.shots[0].panels[0].witness, ['evidence']);
 });
 
+test('a changed panel reports the absolute range it lives in', () => {
+    const build = (purpose: string): Film => {
+        const film = new Film({ width: 320, height: 180, fps: 30 });
+        film.scene({ id: 'a', duration: 2, items: [text({ content: 'a' })] });
+        film.scene({ id: 'b', duration: 2, items: [text({ content: 'b' })] });
+        film.production({ shots: [{ id: 's2', scene: 'b', panels: [{ id: 'p2', range: [0, 30], purpose, composition: 'wide' }] }] });
+        return film;
+    };
+    const change = build('see b').changesFrom(build('see b again')).changes.find((entry) => entry.kind === 'panel');
+    assert.deepEqual(change?.range, [60, 90]);
+});
+
 const bed = (volume: number): Film => {
     const film = new Film({ width: 320, height: 180, fps: 30 });
     film.scene({ id: 'a', duration: 2, items: [text({ content: 'x' })] });

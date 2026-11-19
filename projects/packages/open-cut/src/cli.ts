@@ -797,6 +797,12 @@ if (command === 'diff') {
     if (diff.reencode) {
         console.log(`re-encode the deliverable: the audio bed or delivery changed without moving a frame -> open-cut render ${path.basename(script)} --out <master>`);
     }
+    const changedPanels = [...new Set(diff.changes
+        .filter((change) => change.kind === 'panel' && change.change !== 'removed')
+        .map((change) => change.id))];
+    if (changedPanels.length > 0) {
+        console.log(`compare the changed panels -> open-cut compare ${path.basename(script)} --before ${path.basename(beforeArg)} --only ${changedPanels.join(',')} --out review.png`);
+    }
     process.exit(0);
 }
 
