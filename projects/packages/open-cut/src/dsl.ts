@@ -108,7 +108,12 @@ export type ItemInput = TimedInput & { kind: string } & Record<string, unknown>;
 export interface NodeOptions {
     /** Stable identity for revisions, locks and notes. */
     id?: string;
-    /** Motion with keys in seconds relative to the item's own start. */
+    /**
+     * Motion with keys in seconds. By default keys run on the scene clock, the
+     * same clock the renderer samples. Set `timeBase: 'local'` to author keys
+     * relative to the item's own start; compiling adds that offset once, at
+     * every nesting level, instead of leaving a manual fixup in the film.
+     */
     anim?: AnimInput;
 }
 
@@ -126,13 +131,16 @@ function frames(seconds: number, fps: number): number {
 
 function compileItem(item: ItemInput, fps: number, sceneSeconds: number): Item {
     const out: Record<string, unknown> = { ...item };
-    out['at'] = frames((item.at ?? 0) as number, fps);
+    const atFrames = frames((item.at ?? 0) as number, fps);
+    out['at'] = atFrames;
     out['dur'] = Math.max(1, frames((item.dur ?? sceneSeconds) as number, fps));
     // Zero is a real value: a fade of 0 means "no fade", so an author can cut
     // exactly on a frame instead of getting an implicit one-frame ramp.
     out['fadeIn'] = Math.max(0, frames((item.fadeIn ?? DEFAULT_FADE) as number, fps));
     out['fadeOut'] = Math.max(0, frames((item.fadeOut ?? DEFAULT_FADE) as number, fps));
-    out['anim'] = compileAnim(item['anim'] as AnimInput | undefined, fps);
+    const motion = item['anim'] as AnimInput | undefined;
+    const offset = motion?.timeBase === 'local' ? atFrames : 0;
+    out['anim'] = compileAnim(motion, fps, offset);
     // A layer's children keep their own (layer-relative) timing, in seconds.
     if (item.kind === 'layer' && Array.isArray(item['items'])) {
         const children = item['items'] as ItemInput[];
@@ -141,8 +149,14 @@ function compileItem(item: ItemInput, fps: number, sceneSeconds: number): Item {
     return out as unknown as Item;
 }
 
-/** Track keys authored in seconds; the core reads local frames. */
+/** Track keys authored in seconds; the core reads frames. */
 type AnimInput = {
+    /**
+     * Which clock the keys are written on. `scene` (default) matches the
+     * renderer's sampling clock; `local` is relative to the item's own start
+     * and is offset by `at` at compile time.
+     */
+    timeBase?: 'scene' | 'local';
     x?: Array<{ at: number; value: number; ease?: Ease }>;
     y?: Array<{ at: number; value: number; ease?: Ease }>;
     opacity?: Array<{ at: number; value: number; ease?: Ease }>;
@@ -150,22 +164,22 @@ type AnimInput = {
     follow?: { points: Array<[number, number]>; smooth?: boolean; closed?: boolean };
 };
 
-function compileTrack<T>(keys: Array<Keyframe<T>> | undefined, fps: number): Track<T> | undefined {
+function compileTrack<T>(keys: Array<Keyframe<T>> | undefined, fps: number, offsetFrames = 0): Track<T> | undefined {
     if (!keys) {
         return undefined;
     }
-    return { keys: keys.map((key) => ({ ...key, at: frames(key.at, fps) })) };
+    return { keys: keys.map((key) => ({ ...key, at: frames(key.at, fps) + offsetFrames })) };
 }
 
-function compileAnim(input: AnimInput | Animated | undefined, fps: number): Animated | undefined {
+function compileAnim(input: AnimInput | Animated | undefined, fps: number, offsetFrames = 0): Animated | undefined {
     if (!input) {
         return undefined;
     }
     const anim: Animated = {};
-    const x = compileTrack(input.x as Keyframe<number>[], fps);
-    const y = compileTrack(input.y as Keyframe<number>[], fps);
-    const opacity = compileTrack(input.opacity as Keyframe<number>[], fps);
-    const progress = compileTrack(input.progress as Keyframe<number>[], fps);
+    const x = compileTrack(input.x as Keyframe<number>[], fps, offsetFrames);
+    const y = compileTrack(input.y as Keyframe<number>[], fps, offsetFrames);
+    const opacity = compileTrack(input.opacity as Keyframe<number>[], fps, offsetFrames);
+    const progress = compileTrack(input.progress as Keyframe<number>[], fps, offsetFrames);
     if (x) anim.x = x;
     if (y) anim.y = y;
     if (opacity) anim.opacity = opacity;
@@ -175,9 +189,11 @@ function compileAnim(input: AnimInput | Animated | undefined, fps: number): Anim
 }
 
 /**
- * Motion for one node, with every key authored in seconds relative to the
- * item's own start. Position is normalized frame coordinates; `progress` drives
- * both "how much is drawn" and travel along `follow`.
+ * Motion for one node, with every key authored in seconds. Keys run on the
+ * scene clock by default, which is what the renderer samples; pass
+ * `timeBase: 'local'` to write them relative to the item's own start. Position
+ * is normalized frame coordinates; `progress` drives both "how much is drawn"
+ * and travel along `follow`.
  */
 export function anim(spec: AnimInput): AnimInput {
     return spec;
@@ -804,9 +820,16 @@ export type CueTiming = { kind: 'estimated' } | { kind: 'measured'; source: stri
 export interface PanelInput {
     id: string;
     range: [number, number];
+    /** What the audience must see here: the evidence this panel carries. */
     purpose: string;
     composition: string;
     dialogue?: string;
+    /** Camera note for this panel, e.g. a move or a focal change. */
+    camera?: string;
+    /** What has to be heard at this moment. */
+    sound?: string;
+    /** Safe area in normalized panel coordinates `[x0, y0, x1, y1]`. */
+    safeArea?: [number, number, number, number];
     notes?: string[];
 }
 
