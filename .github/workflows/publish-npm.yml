@@ -40,7 +40,7 @@ jobs:
       tag: ${{ steps.bind.outputs.tag }}
     steps:
       - name: Checkout (for tag fetch)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -84,7 +84,7 @@ jobs:
             cross_target: 'x86_64-apple-darwin'
     steps:
       - name: Checkout tag peel
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ needs.provenance.outputs.tag }}
           fetch-depth: 0
@@ -152,7 +152,7 @@ jobs:
     environment: NPM_PUBLISH
     steps:
       - name: Checkout tag peel
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ needs.provenance.outputs.tag }}
           fetch-depth: 0
