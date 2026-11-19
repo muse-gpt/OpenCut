@@ -17,6 +17,8 @@
  *   open-cut seams <film.mjs|film.ts> --out file.png [--json]
  *   open-cut at <film.mjs|film.ts> --frame N [--json]
  *   open-cut shots <film.mjs|film.ts> [--json]
+ *   open-cut diff <film> --before <film> [--json]
+ *   open-cut notes <film> [--file path] [--add --text "..." --shot id [--panel id] [--cue id] [--frame N]] [--resolve id] [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--page 1600x1200] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
@@ -31,7 +33,7 @@
  * that file stops the run without touching the previous output.
  * Exit codes: 0 success, 1 runtime failure, 2 usage error.
  */
-import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -119,6 +121,24 @@ interface CueEntry {
     absolute: [number, number] | null;
     text: string;
     speaker: string | null;
+}
+
+/** A review annotation kept beside the film, so a note never edits the source. */
+interface ReviewNote {
+    id: string;
+    /** Absolute frame the note points at, or `null` when the anchor was lost. */
+    frame: number | null;
+    shot: string | null;
+    panel: string | null;
+    cue: string | null;
+    text: string;
+    status: 'open' | 'resolved';
+}
+
+/** Where notes for a film live by default: `<dir>/<name>.notes.json`. */
+function notesPathFor(entry: string): string {
+    const resolved = path.resolve(entry);
+    return path.join(path.dirname(resolved), `${path.basename(resolved, path.extname(resolved))}.notes.json`);
 }
 
 /**
@@ -718,6 +738,165 @@ if (command === 'shots') {
     }
     console.log(`${report.ok && findings.length === 0 ? 'ok' : 'FAIL'}: ${index.shots.length} shots, ${index.shots.reduce((sum, shot) => sum + shot.panels.length, 0)} panels, ${index.cues.length} cues`);
     process.exit(report.ok && findings.length === 0 ? 0 : 1);
+}
+
+if (command === 'diff') {
+    const script = args[1];
+    if (!script) {
+        fail('diff requires the newer film script path', 2);
+    }
+    const beforeArg = flag(args, '--before');
+    if (beforeArg === undefined) {
+        fail('diff requires --before <previous film>', 2);
+    }
+    const load = async (file: string): Promise<Film> => {
+        const module = await import(pathToFileURL(path.resolve(file)).href);
+        const loaded: unknown = module.default ?? module.film;
+        if (!(loaded instanceof Film)) {
+            fail(`the film module ${file} must default-export a Film instance`, 2);
+        }
+        return loaded;
+    };
+    const after = await load(script);
+    const before = await load(beforeArg);
+    let diff: ReturnType<Film['changesFrom']>;
+    try {
+        diff = after.changesFrom(before);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    if (args.includes('--json')) {
+        console.log(JSON.stringify(diff, null, 2));
+        process.exit(0);
+    }
+    for (const change of diff.changes) {
+        const range = change.range === null ? '—' : `${change.range[0]}–${change.range[1]}`;
+        console.log(`${change.kind} ${change.id} ${change.change} [${range}]`);
+    }
+    if (!diff.changed) {
+        console.log('no changes');
+        process.exit(0);
+    }
+    const seconds = (frame: number): string => (frame / after.fps).toFixed(3).replace(/\.?0+$/, '');
+    for (const [start, end] of diff.rerender) {
+        console.log(`re-render frames ${start}–${end} -> open-cut render ${path.basename(script)} --from ${seconds(start)} --to ${seconds(end)}`);
+    }
+    process.exit(0);
+}
+
+if (command === 'notes') {
+    const script = args[1];
+    if (!script) {
+        fail('notes requires a film script path', 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    const fileArg = flag(args, '--file');
+    const file = fileArg === undefined ? notesPathFor(script) : path.resolve(fileArg);
+    const store: { schema: string; notes: ReviewNote[] } = { schema: 'open-cut.notes/v0', notes: [] };
+    if (existsSync(file)) {
+        try {
+            const stored = JSON.parse(readFileSync(file, 'utf8')) as { notes?: ReviewNote[] };
+            if (Array.isArray(stored.notes)) {
+                store.notes = stored.notes;
+            }
+        }
+        catch (error) {
+            fail(`cannot read ${file}: ${error instanceof Error ? error.message : String(error)}`, 1);
+        }
+    }
+    const index = shotIndex(film);
+    const indexShot = (id: string | undefined) => (id === undefined ? undefined : index.shots.find((shot) => shot.id === id));
+    const resolveId = flag(args, '--resolve');
+    if (resolveId !== undefined) {
+        const note = store.notes.find((entry) => entry.id === resolveId);
+        if (!note) {
+            fail(`no note ${resolveId} in ${file}`, 1);
+        }
+        note.status = 'resolved';
+        writeFileSync(file, `${JSON.stringify(store, null, 2)}\n`);
+        console.log(`resolved ${note.id} (${file})`);
+        process.exit(0);
+    }
+    if (args.includes('--add')) {
+        const text = flag(args, '--text');
+        const shotArg = flag(args, '--shot');
+        const panelArg = flag(args, '--panel');
+        const cueArg = flag(args, '--cue');
+        if (text === undefined || text.trim().length === 0) {
+            fail('notes --add requires --text "<note>"', 2);
+        }
+        if (shotArg === undefined && panelArg === undefined && cueArg === undefined) {
+            fail('notes --add requires --shot, --panel or --cue', 2);
+        }
+        const shot = indexShot(shotArg);
+        if (shotArg !== undefined && shot === undefined) {
+            fail(`unknown shot ${shotArg}`, 1);
+        }
+        if (panelArg !== undefined && shot === undefined) {
+            fail('--panel needs --shot', 2);
+        }
+        const panel = shot === undefined || panelArg === undefined
+            ? undefined
+            : shot.panels.find((entry) => entry.id === panelArg);
+        if (panelArg !== undefined && panel === undefined) {
+            fail(`shot ${String(shotArg)} has no panel ${panelArg}`, 1);
+        }
+        const cue = cueArg === undefined ? undefined : index.cues.find((entry) => entry.id === cueArg);
+        if (cueArg !== undefined && cue === undefined) {
+            fail(`unknown cue ${cueArg}`, 1);
+        }
+        const frameArg = flag(args, '--frame');
+        const frame = frameArg === undefined ? undefined : Number(frameArg);
+        if (frame !== undefined && (!Number.isInteger(frame) || frame < 0)) {
+            fail(`notes --frame must be an integer frame, got ${frameArg}`, 2);
+        }
+        const id = `n${store.notes.reduce((max, note) => {
+            const match = /^n(\d+)$/.exec(note.id);
+            return match === null ? max : Math.max(max, Number(match[1]));
+        }, 0) + 1}`;
+        store.notes.push({
+            id,
+            frame: frame ?? panel?.absolute?.[0] ?? cue?.absolute?.[0] ?? shot?.range?.[0] ?? null,
+            shot: shot?.id ?? null,
+            panel: panel?.id ?? null,
+            cue: cue?.id ?? null,
+            text: text.trim(),
+            status: 'open',
+        });
+        writeFileSync(file, `${JSON.stringify(store, null, 2)}\n`);
+        console.log(`added ${id} (${file})`);
+        process.exit(0);
+    }
+    if (args.includes('--json')) {
+        console.log(JSON.stringify({ file, notes: store.notes }, null, 2));
+        process.exit(0);
+    }
+    const shotIds = new Set(index.shots.map((shot) => shot.id));
+    const panelKeys = new Set(index.shots.flatMap((shot) => shot.panels.map((panel) => `${shot.id}/${panel.id}`)));
+    const cueIds = new Set(index.cues.map((cue) => cue.id));
+    for (const note of store.notes) {
+        const anchor = note.panel !== null
+            ? `panel ${String(note.shot)}/${note.panel}`
+            : note.cue !== null
+                ? `cue ${note.cue}`
+                : note.shot !== null
+                    ? `shot ${note.shot}`
+                    : 'film';
+        const stale = (note.shot !== null && !shotIds.has(note.shot))
+            || (note.panel !== null && !panelKeys.has(`${String(note.shot)}/${note.panel}`))
+            || (note.cue !== null && !cueIds.has(note.cue));
+        const frame = note.frame === null ? '—' : String(note.frame);
+        console.log(`${note.id} ${note.status} frame ${frame} ${anchor}${stale ? ' stale' : ''} "${note.text}"`);
+    }
+    if (store.notes.length === 0) {
+        console.log(`no notes (${file})`);
+    }
+    process.exit(0);
 }
 
 if (command === 'scenes') {

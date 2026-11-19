@@ -199,6 +199,24 @@ export function anim(spec: AnimInput): AnimInput {
     return spec;
 }
 
+/** One difference between two builds of a film. */
+export interface FilmChange {
+    kind: 'scene' | 'shot' | 'panel' | 'cue';
+    id: string;
+    change: 'added' | 'removed' | 'changed' | 'moved';
+    /** Absolute half-open frames in the newer film, or `null` when the thing
+     *  no longer exists there. */
+    range: [number, number] | null;
+}
+
+/** What changed between two builds, and which blocks need a re-render. */
+export interface FilmDiff {
+    changes: FilmChange[];
+    /** Merged absolute ranges of the newer film that changed, in frame order. */
+    rerender: Array<[number, number]>;
+    changed: boolean;
+}
+
 /** A film: scenes plus the audio bed, compiled to the core IR. */
 export class Film {
     readonly width: number;
@@ -470,6 +488,160 @@ export class Film {
         });
     }
 
+    /** Reports what changed since `before`, and which blocks need a re-render.
+     *
+     *  Scenes compare on their compiled IR with `start` removed, so a pure shift
+     *  reads as `moved` instead of `changed`. Shots compare without their
+     *  panels, and panels and cues compare on their own book entries. Ranges are
+     *  absolute frames in this film; removed entries carry `null` because they
+     *  have no home here. */
+    changesFrom(before: Film): FilmDiff {
+        const changes: FilmChange[] = [];
+        const afterScenes = (toWire(this.toProject()) as { scenes?: Array<Record<string, unknown>> }).scenes ?? [];
+        const beforeScenes = (toWire(before.toProject()) as { scenes?: Array<Record<string, unknown>> }).scenes ?? [];
+        const sceneKey = (scene: Record<string, unknown>, index: number): string => String(scene['id'] ?? `scene-${index}`);
+        const afterSceneMap = new Map(afterScenes.map((scene, index) => [sceneKey(scene, index), scene]));
+        const beforeSceneMap = new Map(beforeScenes.map((scene, index) => [sceneKey(scene, index), scene]));
+        const afterRanges = new Map(this.scenes.map((scene) => [scene.id, scene.range]));
+        const without = (value: Record<string, unknown>, key: string): Record<string, unknown> => {
+            const copy = { ...value };
+            delete copy[key];
+            return copy;
+        };
+
+        for (const id of new Set([...afterSceneMap.keys(), ...beforeSceneMap.keys()])) {
+            const after = afterSceneMap.get(id);
+            const previously = beforeSceneMap.get(id);
+            const range = afterRanges.get(id) ?? null;
+            if (!after) {
+                changes.push({ kind: 'scene', id, change: 'removed', range: null });
+            }
+            else if (!previously) {
+                changes.push({ kind: 'scene', id, change: 'added', range });
+            }
+            else if (stableJson(without(after, 'start')) !== stableJson(without(previously, 'start'))) {
+                changes.push({ kind: 'scene', id, change: 'changed', range });
+            }
+            else if (after['start'] !== previously['start']) {
+                changes.push({ kind: 'scene', id, change: 'moved', range });
+            }
+        }
+
+        type RawShot = Record<string, unknown> & { id: string; scene: string; panels?: unknown[] };
+        type RawPanel = Record<string, unknown> & { id: string; range: [number, number] };
+        type RawCue = Record<string, unknown> & { id: string; shot: string; range: [number, number] };
+
+        const shotsOf = (book: unknown): Map<string, RawShot> => {
+            const shots = (book as { shots?: unknown[] }).shots;
+            return new Map((Array.isArray(shots) ? shots : []).map((entry) => {
+                const shot = entry as RawShot;
+                return [shot.id, shot];
+            }));
+        };
+        const panelsOf = (shots: Map<string, RawShot>): Map<string, { shot: string; panel: RawPanel }> => {
+            const out = new Map<string, { shot: string; panel: RawPanel }>();
+            for (const shot of shots.values()) {
+                for (const entry of Array.isArray(shot.panels) ? shot.panels : []) {
+                    const panel = entry as RawPanel;
+                    out.set(`${shot.id}/${panel.id}`, { shot: shot.id, panel });
+                }
+            }
+            return out;
+        };
+        const sceneRangeOf = (scene: string): [number, number] | null => {
+            try {
+                return this.sceneRange(scene);
+            }
+            catch {
+                return null;
+            }
+        };
+
+        const afterShots = shotsOf(this.toProduction());
+        const beforeShots = shotsOf(before.toProduction());
+        for (const id of new Set([...afterShots.keys(), ...beforeShots.keys()])) {
+            const after = afterShots.get(id);
+            const previously = beforeShots.get(id);
+            const range = after ? sceneRangeOf(after.scene) : null;
+            if (!after) {
+                changes.push({ kind: 'shot', id, change: 'removed', range: null });
+            }
+            else if (!previously) {
+                changes.push({ kind: 'shot', id, change: 'added', range });
+            }
+            else if (stableJson(without(after, 'panels')) !== stableJson(without(previously, 'panels'))) {
+                changes.push({ kind: 'shot', id, change: 'changed', range });
+            }
+        }
+
+        const afterPanels = panelsOf(afterShots);
+        const beforePanels = panelsOf(beforeShots);
+        for (const key of new Set([...afterPanels.keys(), ...beforePanels.keys()])) {
+            const after = afterPanels.get(key);
+            const previously = beforePanels.get(key);
+            const panelId = key.slice(key.indexOf('/') + 1);
+            const range = after === undefined
+                ? null
+                : ((): [number, number] | null => {
+                    const scene = sceneRangeOf(after.shot);
+                    return scene === null ? null : [scene[0] + after.panel.range[0], scene[0] + after.panel.range[1]];
+                })();
+            if (!after) {
+                changes.push({ kind: 'panel', id: panelId, change: 'removed', range: null });
+            }
+            else if (!previously) {
+                changes.push({ kind: 'panel', id: panelId, change: 'added', range });
+            }
+            else if (stableJson(after.panel) !== stableJson(previously.panel)) {
+                changes.push({ kind: 'panel', id: panelId, change: 'changed', range });
+            }
+        }
+
+        const cuesOf = (book: unknown): Map<string, RawCue> => {
+            const cues = (book as { cues?: unknown[] }).cues;
+            return new Map((Array.isArray(cues) ? cues : []).map((entry) => {
+                const cue = entry as RawCue;
+                return [cue.id, cue];
+            }));
+        };
+        const cueRange = (cue: RawCue): [number, number] | null => {
+            const shot = afterShots.get(cue.shot);
+            const scene = shot ? sceneRangeOf(shot.scene) : null;
+            return scene === null ? null : [scene[0] + cue.range[0], scene[0] + cue.range[1]];
+        };
+        const afterCues = cuesOf(this.toProduction());
+        const beforeCues = cuesOf(before.toProduction());
+        for (const id of new Set([...afterCues.keys(), ...beforeCues.keys()])) {
+            const after = afterCues.get(id);
+            const previously = beforeCues.get(id);
+            if (!after) {
+                changes.push({ kind: 'cue', id, change: 'removed', range: null });
+            }
+            else if (!previously) {
+                changes.push({ kind: 'cue', id, change: 'added', range: cueRange(after) });
+            }
+            else if (stableJson(after) !== stableJson(previously)) {
+                changes.push({ kind: 'cue', id, change: 'changed', range: cueRange(after) });
+            }
+        }
+
+        const blocks = changes
+            .filter((change): change is FilmChange & { range: [number, number] } => change.range !== null)
+            .map((change) => change.range)
+            .sort((left, right) => left[0] - right[0]);
+        const rerender: Array<[number, number]> = [];
+        for (const block of blocks) {
+            const last = rerender[rerender.length - 1];
+            if (last !== undefined && block[0] <= last[1]) {
+                last[1] = Math.max(last[1], block[1]);
+            }
+            else {
+                rerender.push([block[0], block[1]]);
+            }
+        }
+        return { changes, rerender, changed: changes.length > 0 };
+    }
+
     /** Writes one contact sheet: the middle frame of every panel in a grid. */
     contactSheet(outPath: string, options: StoryboardOptions = {}): StoryboardPage {
         return native.writeContactSheet({
@@ -661,6 +833,22 @@ export function toWire(value: unknown): unknown {
         return out;
     }
     return value;
+}
+
+/** JSON with sorted keys, so two builds compare structurally rather than by
+ *  declaration order. `undefined` members are dropped the way JSON does. */
+function stableJson(value: unknown): string {
+    if (value === null || typeof value !== 'object') {
+        return JSON.stringify(value) ?? 'null';
+    }
+    if (Array.isArray(value)) {
+        return `[${value.map(stableJson).join(',')}]`;
+    }
+    const record = value as Record<string, unknown>;
+    const keys = Object.keys(record)
+        .filter((key) => record[key] !== undefined)
+        .sort();
+    return `{${keys.map((key) => `${JSON.stringify(key)}:${stableJson(record[key])}`).join(',')}}`;
 }
 
 // ---------------------------------------------------------------------------
