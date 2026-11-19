@@ -48,6 +48,8 @@ export type {
     DeliveryAudio,
     DeliveryReport,
     FrameLookup,
+    GuiOpenOptions,
+    PreviewRangeOptions,
     PreviewResult,
     ProductionCounts,
     ProductionReport,

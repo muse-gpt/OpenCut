@@ -20,6 +20,7 @@
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --from s --to s --out dir [--json]
+ *   open-cut gui <film.mjs|film.ts> [--content-dir dir] [--range from:to] [--scale n] [--title text]
  *   open-cut build [--json]
  *   open-cut version
  *
@@ -29,10 +30,12 @@
  * that file stops the run without touching the previous output.
  * Exit codes: 0 success, 1 runtime failure, 2 usage error.
  */
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
-import { pathToFileURL } from 'node:url';
-import { Film } from './dsl.js';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { Film, toWire } from './dsl.js';
+import { native } from './native.js';
 import { nativeBuild, nativeVersion, inspectDelivery, verifyRender } from './index.js';
 
 function fail(message: string, code: number): never {
@@ -52,6 +55,30 @@ function flag(args: string[], name: string): string | undefined {
     return value;
 }
 
+/** Resolves the staged VMZ workbench directory.
+ *
+ * Explicit flag → `OPEN_CUT_GUI` → shipped `dist/gui` → sibling UI build. A
+ * directory without `index.html` is rejected instead of opening a blank window. */
+function resolveGuiContentDir(explicit: string | undefined): string {
+    const here = path.dirname(fileURLToPath(import.meta.url));
+    const candidates = [
+        explicit === undefined ? undefined : path.resolve(explicit),
+        process.env.OPEN_CUT_GUI,
+        path.resolve(here, 'gui'),
+        path.resolve(here, '../../open-cut-ui/dist/static'),
+    ].filter((candidate): candidate is string => candidate !== undefined && candidate.length > 0);
+    const found = candidates.find((candidate) => existsSync(path.join(candidate, 'index.html')));
+    if (found === undefined) {
+        fail(
+            `GUI content directory not found. Build it with \`pnpm build:ui\` or pass --content-dir.\nTried:\n${candidates
+                .map((candidate) => `  - ${candidate}`)
+                .join('\n')}`,
+            2,
+        );
+    }
+    return found;
+}
+
 /** Converts a non-negative seconds flag into a rounded frame index. */
 function secondsToFrame(value: string, fps: number, name: string): number {
     const seconds = Number(value);
@@ -67,6 +94,99 @@ const command = args[0];
 if (command === 'version' || command === undefined) {
     console.log(command === undefined ? 'usage: open-cut render <film> [--out file.mp4] | open-cut verify <film> --out file.mp4 | open-cut validate <film> | open-cut plan <film> | open-cut storyboard <film> --out dir | open-cut preview <film> --frame N --out file.png | open-cut build | open-cut version' : nativeVersion());
     process.exit(command === undefined ? 2 : 0);
+}
+
+if (command === 'gui') {
+    const script = args[1];
+    if (!script) {
+        fail('gui requires a film script path', 2);
+    }
+    const entry = path.resolve(script);
+    const contentDir = resolveGuiContentDir(flag(args, '--content-dir'));
+    const scaleArg = flag(args, '--scale');
+    const scale = scaleArg === undefined ? 0.5 : Number(scaleArg);
+    if (!(scale >= 0.1 && scale <= 1)) {
+        fail(`--scale must be between 0.1 and 1, got ${scaleArg}`, 2);
+    }
+    const module = await import(pathToFileURL(entry).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    const rangeArg = flag(args, '--range');
+    let autoPreview: { startFrame: number; endFrame: number } | null = null;
+    if (rangeArg !== undefined) {
+        const match = /^(\d+):(\d+)$/.exec(rangeArg.trim());
+        if (match === null) {
+            fail(`--range takes <start>:<end> in frames, got ${rangeArg}`, 2);
+        }
+        const startFrame = Number(match[1]);
+        const endFrame = Number(match[2]);
+        if (!(startFrame < endFrame) || endFrame > film.durationFrames) {
+            fail(`--range ${rangeArg} must satisfy 0 <= start < end <= ${film.durationFrames}`, 2);
+        }
+        autoPreview = { startFrame, endFrame };
+    }
+    const projectJson = JSON.stringify(toWire(film.toProject()));
+    const revision = createHash('sha256').update(projectJson).digest('hex').slice(0, 12);
+    const book = film.toProduction() as { shots?: unknown[]; cues?: unknown[]; assets?: unknown[] };
+    const shots = Array.isArray(book.shots) ? book.shots : [];
+    const session = {
+        schema: 'open-cut.session/v0',
+        name: path.basename(entry, path.extname(entry)),
+        root: path.dirname(entry),
+        entry: path.basename(entry),
+        revision,
+        build: nativeBuild(),
+        project: {
+            width: film.width,
+            height: film.height,
+            fps: film.fps,
+            durationFrames: film.durationFrames,
+            scenes: film.scenes,
+        },
+        production: {
+            shots: shots.length,
+            panels: shots.reduce<number>((sum, shot) => {
+                const panels = (shot as { panels?: unknown[] }).panels;
+                return sum + (Array.isArray(panels) ? panels.length : 0);
+            }, 0),
+            cues: Array.isArray(book.cues) ? book.cues.length : 0,
+            assets: Array.isArray(book.assets) ? book.assets.length : 0,
+        },
+        preview: { scale, autoPreview },
+    };
+    const title = flag(args, '--title') ?? `OpenCut — ${session.name}`;
+    try {
+        const opened = native.openGui({
+            contentDir,
+            title,
+            project: projectJson,
+            session: JSON.stringify(session),
+        });
+        if (!opened.opened) {
+            fail(`GUI is already open (${opened.reason ?? 'unknown'})`, 1);
+        }
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    console.log(`open-cut: gui ${session.name} [${revision}] ${film.width}x${film.height}@${film.fps} ${film.durationFrames}f`);
+    console.log(`open-cut: review ${contentDir}`);
+    // `pumpEvents` must run on this thread: it owns the window message loop.
+    const timer = setInterval(() => {
+        if (!native.pumpEvents()) {
+            clearInterval(timer);
+            process.exit(0);
+        }
+    }, 16);
+    process.on('SIGINT', () => {
+        native.closeGui();
+        process.exit(0);
+    });
+    // Keep this module suspended: the pump timer owns the process lifetime and
+    // the render command below must not run for `gui`.
+    await new Promise<void>(() => {});
 }
 
 if (command === 'build') {

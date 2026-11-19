@@ -51,6 +51,16 @@ importers:
 
   projects/packages/open-cut-linux-x64: {}
 
+  projects/packages/open-cut-ui:
+    dependencies:
+      '@vmz/core':
+        specifier: 0.3.17
+        version: 0.3.17
+    devDependencies:
+      '@vmz/vmz':
+        specifier: 0.3.17
+        version: 0.3.17(typescript@5.9.3)
+
   projects/packages/open-cut-win32-x64: {}
 
   projects/sites/homepage:

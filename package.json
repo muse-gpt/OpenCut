@@ -12,8 +12,10 @@
     "scripts": {
         "build:napi": "node --experimental-strip-types scripts/build-napi.ts",
         "build:ts": "pnpm --filter @wae/open-cut run build",
-        "build": "pnpm run build:napi && pnpm run build:ts",
+        "build:ui": "pnpm --filter @wae/open-cut-ui run build && pnpm --filter @wae/open-cut-ui run stage",
+        "build": "pnpm run build:napi && pnpm run build:ts && pnpm run build:ui",
         "stage:native": "node --experimental-strip-types scripts/stage-native.ts",
+        "gui": "pnpm --filter @wae/open-cut exec open-cut gui ../../films/promotional/atlas.ts",
         "render:demo": "pnpm run build && node --experimental-strip-types films/demo.ts"
     },
     "devDependencies": {

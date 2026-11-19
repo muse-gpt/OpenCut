@@ -1,0 +1,70 @@
+<template>
+    <div class="app-root">
+        <slot />
+    </div>
+</template>
+
+<style>
+:root {
+    --oc-bg: #f5f6f8;
+    --oc-surface: #ffffff;
+    --oc-surface-2: #eef0f4;
+    --oc-ink: #18202c;
+    --oc-muted: #667184;
+    --oc-line: #dde2ea;
+    --oc-accent: #2f6fed;
+    --oc-accent-ink: #ffffff;
+    --oc-danger: #c0392b;
+    --oc-stage: #14181f;
+    --oc-radius: 10px;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html,
+body,
+#app,
+.app-root {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background: var(--oc-bg);
+    color: var(--oc-ink);
+    font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3,
+p {
+    margin: 0;
+}
+
+button {
+    font: inherit;
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: default;
+}
+
+code,
+.mono {
+    font-family: "Cascadia Code", "Consolas", monospace;
+}
+</style>
+
+<script client>
+export default class Application {}
+</script>

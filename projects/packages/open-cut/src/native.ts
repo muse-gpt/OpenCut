@@ -124,6 +124,28 @@ export interface BuildInfo {
     profile: string;
 }
 
+/** Options for a review-range preview: half-open frames, optional smaller raster. */
+export interface PreviewRangeOptions {
+    /** First project frame of the interval. */
+    startFrame: number;
+    /** Exclusive end frame. */
+    endFrame: number;
+    /** Raster scale in `0.1..=1.0`; timing and scenes stay unchanged. */
+    scale?: number;
+}
+
+/** What the GUI host shows on mount. Owned by the Node side, opaque to native. */
+export interface GuiOpenOptions {
+    /** Staged VMZ static directory mapped to `https://app.local/`. */
+    contentDir: string;
+    /** Window title. */
+    title?: string;
+    /** Compiled project JSON used for preview renders. */
+    project: string;
+    /** Session snapshot JSON the page reads on mount. */
+    session: string;
+}
+
 export interface PreviewResult {
     frame: number;
     width: number;
@@ -323,6 +345,11 @@ export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
     renderProject(options: { project: string; out: string } & RenderOptions): RenderResult;
+    previewRange(options: { project: string; out: string } & PreviewRangeOptions): RenderResult;
+    openGui(options: GuiOpenOptions): { opened: boolean; reason?: string; title?: string };
+    pumpEvents(): boolean;
+    closeGui(): void;
+    isGuiOpen(): boolean;
     previewFrame(options: { project: string; frame: number; out: string }): PreviewResult;
     validateProduction(options: { production: string }): ProductionReport;
     planTasks(options: { production: string }): TaskPlan;

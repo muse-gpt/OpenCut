@@ -1,0 +1,588 @@
+<template>
+    <div class="wb">
+        <header class="wb-top">
+            <div class="brand">OpenCut<span>审看工作台</span></div>
+            <div class="meta" v-if="session">
+                <strong>{{ session.name }}</strong>
+                <span class="dim mono">{{ session.entry }}</span>
+                <span class="pill">{{ session.project.width }}x{{ session.project.height }} · {{ session.project.fps }}fps</span>
+                <span class="pill">{{ session.project.durationFrames }} 帧</span>
+                <span class="pill mono">rev {{ session.revision }}</span>
+            </div>
+            <div class="spacer"></div>
+            <span :class="bridgeReady ? 'status' : 'status bad'">{{ statusText }}</span>
+        </header>
+
+        <div class="banner" v-if="!bridgeReady">
+            原生桥不可用。这个页面只在 <code>open-cut gui &lt;film&gt;</code> 打开的 WAE WebView 中工作；
+            浏览器里不会加载假项目或假帧。
+        </div>
+
+        <main class="wb-body">
+            <aside class="rail">
+                <h2>场景</h2>
+                <button
+                    v-for="scene in scenes"
+                    :key="scene.id"
+                    type="button"
+                    class="scene"
+                    :data-id="scene.id"
+                    @click="pickScene"
+                >
+                    <span class="scene-name">{{ scene.id }}</span>
+                    <span class="scene-range mono">{{ scene.range[0] }}–{{ scene.range[1] }}</span>
+                </button>
+                <p class="rail-empty" v-if="session && !scenes.length">工程没有声明场景。</p>
+                <p class="rail-empty" v-if="!session">正在读取工程…</p>
+
+                <h2 v-if="session">生产册</h2>
+                <dl class="counts" v-if="session">
+                    <div><dt>镜头</dt><dd>{{ session.production.shots }}</dd></div>
+                    <div><dt>面板</dt><dd>{{ session.production.panels }}</dd></div>
+                    <div><dt>cue</dt><dd>{{ session.production.cues }}</dd></div>
+                    <div><dt>素材</dt><dd>{{ session.production.assets }}</dd></div>
+                </dl>
+
+                <h2 v-if="session">宿主</h2>
+                <dl class="counts" v-if="session">
+                    <div><dt>native</dt><dd class="mono">{{ session.build.version }}</dd></div>
+                    <div><dt>source</dt><dd class="mono">{{ session.build.sourceRev }}{{ session.build.dirty ? '*' : '' }}</dd></div>
+                    <div><dt>profile</dt><dd class="mono">{{ session.build.profile }}</dd></div>
+                </dl>
+            </aside>
+
+            <section class="stage">
+                <div class="range-bar">
+                    <label>起始帧
+                        <input type="number" min="0" step="1" :value="startFrame" @input="onStartInput" />
+                    </label>
+                    <label>结束帧
+                        <input type="number" min="0" step="1" :value="endFrame" @input="onEndInput" />
+                    </label>
+                    <label>预览缩放
+                        <select @change="onScaleChange">
+                            <option value="0.25" :selected="scale === 0.25">0.25x</option>
+                            <option value="0.5" :selected="scale === 0.5">0.5x</option>
+                            <option value="0.75" :selected="scale === 0.75">0.75x</option>
+                            <option value="1" :selected="scale === 1">1x</option>
+                        </select>
+                    </label>
+                    <button type="button" class="btn" @click="wholeFilm">整片</button>
+                    <button type="button" class="btn primary" :disabled="!bridgeReady || rendering || !session" @click="renderRange">
+                        {{ rendering ? '渲染中…' : '渲染区间' }}
+                    </button>
+                    <span class="hint mono" v-if="session">{{ rangeHint }}</span>
+                </div>
+
+                <div class="result" v-if="result">
+                    <div class="result-line">
+                        <span class="ok">已渲染</span>
+                        <span class="mono">{{ resultSummary }}</span>
+                    </div>
+                    <div class="result-path mono">{{ resultPath }}</div>
+                </div>
+
+                <div class="viewer">
+                    <video v-if="videoUrl" :src="videoUrl" controls autoplay loop></video>
+                    <div v-else class="viewer-empty">
+                        <p>选一段区间，然后点“渲染区间”。</p>
+                        <p class="dim">GUI 通过 IPC 调用 native `previewRange`，产物是本机真实 MP4。</p>
+                    </div>
+                    <div class="progress" v-if="rendering">
+                        <div class="progress-fill" :style="progressStyle"></div>
+                    </div>
+                </div>
+
+                <div class="banner bad" v-if="error">{{ error }}</div>
+            </section>
+        </main>
+    </div>
+</template>
+
+<style>
+.wb {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.wb-top {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--oc-line);
+    background: var(--oc-surface);
+}
+
+.brand {
+    font-weight: 700;
+    letter-spacing: -0.01em;
+}
+
+.brand span {
+    margin-left: 8px;
+    color: var(--oc-muted);
+    font-weight: 500;
+    font-size: 12px;
+}
+
+.meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: var(--oc-ink);
+}
+
+.dim {
+    color: var(--oc-muted);
+}
+
+.pill {
+    padding: 2px 8px;
+    border: 1px solid var(--oc-line);
+    border-radius: 999px;
+    background: var(--oc-surface-2);
+    color: var(--oc-muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.spacer {
+    flex: 1;
+}
+
+.status {
+    color: #1e7a45;
+    font-size: 12px;
+}
+
+.status.bad {
+    color: var(--oc-danger);
+}
+
+.banner {
+    flex: 0 0 auto;
+    padding: 10px 16px;
+    border-bottom: 1px solid #f0d6a8;
+    background: #fff8e8;
+    color: #7a5a12;
+}
+
+.banner.bad {
+    border-color: #f2c4bd;
+    background: #fdf0ee;
+    color: var(--oc-danger);
+}
+
+.banner code {
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.06);
+}
+
+.wb-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+.rail {
+    flex: 0 0 15rem;
+    padding: 14px 12px 24px;
+    border-right: 1px solid var(--oc-line);
+    background: var(--oc-surface);
+    overflow-y: auto;
+}
+
+.rail h2 {
+    margin: 0 0 8px;
+    color: var(--oc-muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.rail h2 + h2 {
+    margin-top: 20px;
+}
+
+.scene {
+    display: flex;
+    width: 100%;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    margin: 0 0 4px;
+    padding: 6px 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--oc-ink);
+    text-align: left;
+}
+
+.scene:hover {
+    border-color: var(--oc-line);
+    background: var(--oc-surface-2);
+}
+
+.scene-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.scene-range {
+    color: var(--oc-muted);
+    font-size: 11px;
+    white-space: nowrap;
+}
+
+.rail-empty {
+    margin: 0 0 4px;
+    color: var(--oc-muted);
+}
+
+.counts {
+    display: grid;
+    margin: 0 0 4px;
+    gap: 2px;
+}
+
+.counts div {
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.counts dt {
+    color: var(--oc-muted);
+}
+
+.counts dd {
+    margin: 0;
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.stage {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-direction: column;
+    padding: 14px 16px 16px;
+    gap: 12px;
+}
+
+.range-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+}
+
+.range-bar label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--oc-muted);
+}
+
+.range-bar input,
+.range-bar select {
+    width: 6.5rem;
+    padding: 5px 8px;
+    border: 1px solid var(--oc-line);
+    border-radius: 6px;
+    background: var(--oc-surface);
+    color: var(--oc-ink);
+    font: inherit;
+}
+
+.range-bar select {
+    width: 5.5rem;
+}
+
+.btn {
+    padding: 6px 12px;
+    border: 1px solid var(--oc-line);
+    border-radius: 6px;
+    background: var(--oc-surface);
+    color: var(--oc-ink);
+}
+
+.btn:hover:not(:disabled) {
+    border-color: var(--oc-accent);
+}
+
+.btn.primary {
+    border-color: var(--oc-accent);
+    background: var(--oc-accent);
+    color: var(--oc-accent-ink);
+    font-weight: 600;
+}
+
+.btn.primary:disabled {
+    opacity: 0.5;
+}
+
+.hint {
+    color: var(--oc-muted);
+    font-size: 12px;
+}
+
+.viewer {
+    position: relative;
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--oc-radius);
+    background: var(--oc-stage);
+    overflow: hidden;
+}
+
+.viewer video {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    background: var(--oc-stage);
+}
+
+.viewer-empty {
+    padding: 24px;
+    color: #c8d0dc;
+    text-align: center;
+}
+
+.viewer-empty .dim {
+    margin-top: 6px;
+    color: #7d8896;
+    font-size: 12px;
+}
+
+.progress {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.14);
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--oc-accent);
+    transition: width 120ms linear;
+}
+
+.result {
+    flex: 0 0 auto;
+    padding: 8px 10px;
+    border: 1px solid var(--oc-line);
+    border-radius: 8px;
+    background: var(--oc-surface);
+}
+
+.result-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.ok {
+    color: #1e7a45;
+    font-weight: 600;
+}
+
+.result-path {
+    margin-top: 4px;
+    color: var(--oc-muted);
+    font-size: 11px;
+    overflow-wrap: anywhere;
+}
+</style>
+
+<script client>
+export default class WorkbenchPage {
+    bridgeReady = false;
+    statusText = "等待原生桥";
+    session = null;
+    scenes = [];
+    error = "";
+    rendering = false;
+    progressDone = 0;
+    progressTotal = 0;
+    videoUrl = "";
+    result = null;
+    resultSummary = "";
+    resultPath = "";
+    rangeHint = "";
+    progressStyle = "width: 0%";
+    startFrame = 0;
+    endFrame = 0;
+    scale = 0.5;
+    _webview = null;
+
+    onMount() {
+        const webview = globalThis.chrome && globalThis.chrome.webview;
+        if (!webview || !webview.postMessage) {
+            this.statusText = "原生桥不可用";
+            return;
+        }
+        this._webview = webview;
+        this.bridgeReady = true;
+        this.statusText = "已连接原生宿主";
+        if (webview.addEventListener) {
+            webview.addEventListener("message", (event) => this.onHostMessage(event));
+        }
+        this.post({ type: "session" });
+    }
+
+    post(message) {
+        if (!this._webview) return false;
+        this._webview.postMessage(JSON.stringify(message));
+        return true;
+    }
+
+    onHostMessage(event) {
+        let data = event && event.data;
+        if (typeof data === "string") {
+            try {
+                data = JSON.parse(data);
+            }
+            catch {
+                return;
+            }
+        }
+        if (!data || typeof data !== "object") return;
+        if (data.type === "progress") {
+            this.progressDone = Number(data.done) || 0;
+            this.progressTotal = Number(data.total) || 0;
+            const percent = this.progressTotal > 0 ? Math.min(100, Math.round((this.progressDone / this.progressTotal) * 100)) : 15;
+            this.progressStyle = `width: ${percent}%`;
+            return;
+        }
+        if (data.ok === false) {
+            this.rendering = false;
+            const error = data.error || {};
+            this.error = `${error.code || "error"}: ${error.message || "unknown failure"}`;
+            return;
+        }
+        if (data.ok === true) {
+            this.applyResponse(data.data || {});
+        }
+    }
+
+    applyResponse(data) {
+        if (data.schema === "open-cut.session/v0") {
+            this.session = data;
+            this.scenes = Array.isArray(data.project.scenes) ? data.project.scenes : [];
+            this.startFrame = 0;
+            this.endFrame = data.project.durationFrames;
+            this.scale = data.preview && data.preview.scale ? data.preview.scale : 0.5;
+            this.statusText = "工程已载入";
+            this.syncRange();
+            const auto = data.preview && data.preview.autoPreview;
+            if (auto) {
+                this.startFrame = auto.startFrame;
+                this.endFrame = auto.endFrame;
+                this.syncRange();
+                this.renderRange();
+            }
+            return;
+        }
+        if (typeof data.url === "string" && data.url.length > 0) {
+            this.rendering = false;
+            this.error = "";
+            this.result = data;
+            this.progressStyle = "width: 100%";
+            this.resultPath = String(data.out || "");
+            const seconds = (Number(data.frames) || 0) / (Number(data.fps) || 30);
+            this.resultSummary = `${data.frames} 帧 · ${data.width}x${data.height} · ${seconds.toFixed(2)}s · ${this.formatBytes(data.bytes)}`;
+            const stamp = Date.now();
+            this.videoUrl = `${data.url}?t=${stamp}`;
+            this.statusText = "区间预览已就绪";
+            return;
+        }
+        this.rendering = false;
+        this.error = "宿主返回了无法识别的数据。";
+    }
+
+    syncRange() {
+        const frames = Math.max(0, this.endFrame - this.startFrame);
+        const fps = this.session ? this.session.project.fps : 30;
+        this.rangeHint = `${frames} 帧 · ${(frames / fps).toFixed(2)}s`;
+    }
+
+    onStartInput(event) {
+        this.startFrame = Number(event && event.target ? event.target.value : 0) || 0;
+        this.syncRange();
+    }
+
+    onEndInput(event) {
+        this.endFrame = Number(event && event.target ? event.target.value : 0) || 0;
+        this.syncRange();
+    }
+
+    onScaleChange(event) {
+        this.scale = Number(event && event.target ? event.target.value : 0.5) || 0.5;
+    }
+
+    pickScene(event) {
+        const id = event && event.currentTarget && event.currentTarget.dataset ? event.currentTarget.dataset.id : "";
+        const scene = this.scenes.find((item) => item.id === id);
+        if (!scene) return;
+        this.startFrame = scene.range[0];
+        this.endFrame = scene.range[1];
+        this.syncRange();
+    }
+
+    wholeFilm() {
+        if (!this.session) return;
+        this.startFrame = 0;
+        this.endFrame = this.session.project.durationFrames;
+        this.syncRange();
+    }
+
+    renderRange() {
+        if (!this.session || !this.bridgeReady) return;
+        const duration = this.session.project.durationFrames;
+        this.startFrame = Math.max(0, Math.min(duration, Math.round(this.startFrame)));
+        this.endFrame = Math.max(0, Math.min(duration, Math.round(this.endFrame)));
+        if (this.endFrame <= this.startFrame) {
+            this.error = "结束帧必须大于起始帧。";
+            return;
+        }
+        this.error = "";
+        this.rendering = true;
+        this.progressDone = 0;
+        this.progressTotal = this.endFrame - this.startFrame;
+        this.progressStyle = "width: 0%";
+        this.syncRange();
+        this.statusText = "正在渲染区间…";
+        this.post({
+            type: "preview.range",
+            startFrame: this.startFrame,
+            endFrame: this.endFrame,
+            scale: this.scale,
+        });
+    }
+
+    formatBytes(bytes) {
+        const value = Number(bytes) || 0;
+        if (value >= 1024 * 1024) return `${(value / (1024 * 1024)).toFixed(1)} MiB`;
+        return `${Math.max(1, Math.round(value / 1024))} KiB`;
+    }
+}
+</script>

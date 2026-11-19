@@ -281,6 +281,27 @@ export class Film {
         return this.sceneList.reduce((sum, scene) => sum + scene.duration, 0);
     }
 
+    /** Scene handles with their absolute half-open frame ranges.
+     *
+     * GUI hosts and range previews use this instead of recomputing scene
+     * durations, so a picked block always matches what a render reports. */
+    get scenes(): Array<{ id: string; range: [number, number] }> {
+        let cursor = 0;
+        return this.sceneList.map((scene, index) => {
+            const duration = Math.max(1, frames(scene.duration, this.fps));
+            const range: [number, number] = [cursor, cursor + duration];
+            cursor = range[1];
+            return { id: scene.id ?? `scene-${index}`, range };
+        });
+    }
+
+    /** Total frames this film compiles to. */
+    get durationFrames(): number {
+        const scenes = this.scenes;
+        const last = scenes[scenes.length - 1];
+        return last === undefined ? 0 : last.range[1];
+    }
+
     /** Half-open frame range of one named scene.
      *
      * The range matches the `scenes` report a render returns, so a review note
@@ -562,6 +583,21 @@ export class Film {
      * project frame index. */
     preview(frame: number, outPath: string): PreviewResult {
         return native.previewFrame({ project: JSON.stringify(toWire(this.toProject())), frame, out: outPath });
+    }
+
+    /** Renders one absolute interval into an MP4 for review.
+     *
+     * The range is half-open and renumbered from zero, and `scale` shrinks the
+     * raster without changing timing, so a review copy costs less than an
+     * export. This is the same native path the GUI workbench calls. */
+    previewRange(startFrame: number, endFrame: number, outPath: string, options: { scale?: number } = {}): RenderResult {
+        return native.previewRange({
+            project: JSON.stringify(toWire(this.toProject())),
+            out: outPath,
+            startFrame,
+            endFrame,
+            scale: options.scale,
+        });
     }
 
     /** Renders the compiled project into `outPath` (MP4).

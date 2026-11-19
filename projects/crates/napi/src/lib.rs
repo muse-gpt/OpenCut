@@ -657,6 +657,250 @@ fn write_motion_preview(ctx: CallContext) -> Result<JsValue> {
     json_to_js(ctx.env(), &to_json(&stats))
 }
 
+/// Render a reviewed frame range into an MP4 at a reduced raster.
+///
+/// Argument: `{ project, out, startFrame, endFrame, scale? }`. The range is
+/// half-open and renumbered from zero, matching `renderProject`. `scale` is
+/// clamped to `0.1..=1.0` and rounds up to even dimensions, so review output
+/// keeps the same timing and scenes but compresses faster than a final export.
+#[function(js_name = "previewRange")]
+fn preview_range(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("previewRange requires an options object"))?;
+    let project = arg.get_named("project")?.as_string()?;
+    let out = arg.get_named("out")?.as_string()?;
+    let start = optional_u32(arg, "startFrame")?.ok_or_else(|| Error::new("previewRange requires startFrame"))?;
+    let end = optional_u32(arg, "endFrame")?.ok_or_else(|| Error::new("previewRange requires endFrame"))?;
+    let scale = optional_f32(arg, "scale")?;
+    let path = std::path::Path::new(&out);
+    if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
+        std::fs::create_dir_all(parent).map_err(|error| Error::new(format!("cannot create output directory: {error}")))?;
+    }
+    let stats = render_range(
+        &project,
+        path,
+        FrameRange { start, end },
+        scale,
+        &mut |done, total| {
+            if done == total || done % 30 == 0 {
+                println!("opencut: preview {done}/{total}");
+            }
+        },
+    )?;
+    json_to_js(ctx.env(), &to_json(&stats))
+}
+
+/// Shared interval render used by `previewRange` and the GUI host.
+fn render_range(
+    project: &str,
+    out: &std::path::Path,
+    range: FrameRange,
+    scale: Option<f32>,
+    progress: &mut dyn FnMut(u32, u32),
+) -> Result<RenderStats> {
+    if range.end <= range.start {
+        return Err(Error::new("invalid_input: endFrame must be greater than startFrame"));
+    }
+    let project = scaled_project(project, scale)?;
+    let options = RenderOptions {
+        range: Some(range),
+        ..Default::default()
+    };
+    media::render::render_project_with(&project, out, &options, progress).map_err(core_error)
+}
+
+/// Rewrites a project's raster for review previews without touching timing.
+fn scaled_project(project: &str, scale: Option<f32>) -> Result<String> {
+    let Some(scale) = scale else {
+        return Ok(project.to_owned());
+    };
+    let scale = scale.clamp(0.1, 1.0);
+    let mut value: serde_json::Value = serde_json::from_str(project)
+        .map_err(|error| Error::new(format!("invalid_input: project json: {error}")))?;
+    let even = |value: f32| {
+        let rounded = value.round().max(2.0) as u32;
+        if rounded % 2 == 0 { rounded } else { rounded + 1 }
+    };
+    let width = value.get("width").and_then(|width| width.as_f64()).unwrap_or(1920.0) as f32;
+    let height = value.get("height").and_then(|height| height.as_f64()).unwrap_or(1080.0) as f32;
+    value["width"] = json!(even(width * scale));
+    value["height"] = json!(even(height * scale));
+    value["supersample"] = serde_json::Value::Null;
+    serde_json::to_string(&value).map_err(|error| Error::new(format!("project json: {error}")))
+}
+
+/// Project snapshot kept for the GUI host. The window stays open across IPC
+/// calls, so the loaded project and the staged UI directory live here instead
+/// of being resent per request.
+struct GuiState {
+    content_dir: std::path::PathBuf,
+    project: String,
+    session: serde_json::Value,
+}
+
+static GUI_STATE: std::sync::OnceLock<std::sync::Mutex<Option<GuiState>>> = std::sync::OnceLock::new();
+
+fn gui_state() -> &'static std::sync::Mutex<Option<GuiState>> {
+    GUI_STATE.get_or_init(|| std::sync::Mutex::new(None))
+}
+
+thread_local! {
+    static GUI_HOST: std::cell::RefCell<Option<wae::webview::WebViewHost>> = const { std::cell::RefCell::new(None) };
+}
+
+struct GuiIpc;
+
+impl wae::webview::IpcHandler for GuiIpc {
+    fn on_ipc(&mut self, message: &str, sink: &wae::webview::IpcSink) -> wae::webview::IpcOutcome {
+        use wae::webview::IpcOutcome;
+        let request: serde_json::Value = match serde_json::from_str(message) {
+            Ok(request) => request,
+            Err(error) => return IpcOutcome::ReplyToPage(error_json("ipc_invalid", &error.to_string())),
+        };
+        let kind = request.get("type").and_then(|kind| kind.as_str()).unwrap_or_default();
+        match kind {
+            "session" => match gui_state().lock() {
+                Ok(state) => match state.as_ref() {
+                    Some(state) => IpcOutcome::ReplyToPage(ok_json(&state.session)),
+                    None => IpcOutcome::ReplyToPage(error_json("gui_not_ready", "no project is loaded")),
+                },
+                Err(_) => IpcOutcome::ReplyToPage(error_json("gui_state_poisoned", "project state is unavailable")),
+            },
+            "preview.range" => IpcOutcome::ReplyToPage(self.preview_range(&request, sink)),
+            "close" => IpcOutcome::CloseWindow,
+            _ => IpcOutcome::ReplyToPage(error_json(
+                "ipc_unknown_type",
+                &format!("unknown message type `{kind}`"),
+            )),
+        }
+    }
+}
+
+impl GuiIpc {
+    fn preview_range(&self, request: &serde_json::Value, sink: &wae::webview::IpcSink) -> String {
+        let start = request.get("startFrame").and_then(|value| value.as_u64());
+        let end = request.get("endFrame").and_then(|value| value.as_u64());
+        let (Some(start), Some(end)) = (start, end) else {
+            return error_json("ipc_invalid", "preview.range requires startFrame and endFrame");
+        };
+        let (start, end) = match (u32::try_from(start), u32::try_from(end)) {
+            (Ok(start), Ok(end)) => (start, end),
+            _ => return error_json("ipc_invalid", "preview.range frames must fit in u32"),
+        };
+        let scale = request.get("scale").and_then(|value| value.as_f64()).map(|value| value as f32);
+        let (project, content_dir) = match gui_state().lock() {
+            Ok(state) => match state.as_ref() {
+                Some(state) => (state.project.clone(), state.content_dir.clone()),
+                None => return error_json("gui_not_ready", "no project is loaded"),
+            },
+            Err(_) => return error_json("gui_state_poisoned", "project state is unavailable"),
+        };
+        let previews = content_dir.join("previews");
+        if let Err(error) = std::fs::create_dir_all(&previews) {
+            return error_json("preview_io", &format!("cannot create preview directory: {error}"));
+        }
+        let name = format!("preview-{start}-{end}.mp4");
+        let out = previews.join(&name);
+        let stats = render_range(&project, &out, FrameRange { start, end }, scale, &mut |done, total| {
+            if done % 10 == 0 || done == total {
+                let _ = sink.post(&json!({ "type": "progress", "done": done, "total": total }).to_string());
+            }
+        });
+        match stats {
+            Ok(stats) => {
+                let mut data = to_json(&stats);
+                data["url"] = json!(format!("previews/{name}"));
+                data["out"] = json!(out.to_string_lossy());
+                ok_json(&data)
+            }
+            Err(error) => error_json("preview_failed", &format!("{error}")),
+        }
+    }
+}
+
+fn ok_json(data: &serde_json::Value) -> String {
+    json!({ "ok": true, "data": data }).to_string()
+}
+
+fn error_json(code: &str, message: &str) -> String {
+    json!({ "ok": false, "error": { "code": code, "message": message } }).to_string()
+}
+
+/// Open the review workbench window for an already loaded project.
+///
+/// Argument: `{ contentDir, title?, project, session }`. `project` and
+/// `session` are JSON strings: the project drives preview renders and the
+/// session is what the page reads on mount. Opening twice focuses the existing
+/// window instead of replacing it.
+#[function(js_name = "openGui")]
+fn open_gui(ctx: CallContext) -> Result<JsValue> {
+    let arg = ctx
+        .args()
+        .first()
+        .copied()
+        .ok_or_else(|| Error::new("openGui requires an options object"))?;
+    if is_gui_alive() {
+        return json_to_js(ctx.env(), &json!({ "opened": false, "reason": "gui_already_open" }));
+    }
+    let content_dir = arg.get_named("contentDir")?.as_string()?;
+    let project = arg.get_named("project")?.as_string()?;
+    let session = arg.get_named("session")?.as_string()?;
+    let title = optional_string(arg, "title")?.unwrap_or_else(|| "OpenCut".to_owned());
+    let session: serde_json::Value = serde_json::from_str(&session)
+        .map_err(|error| Error::new(format!("invalid_input: session json: {error}")))?;
+    {
+        let mut state = gui_state()
+            .lock()
+            .map_err(|_| Error::new("gui_state_poisoned: project state is unavailable"))?;
+        *state = Some(GuiState {
+            content_dir: std::path::PathBuf::from(&content_dir),
+            project,
+            session,
+        });
+    }
+    let mut options = wae::webview::OpenOptions::from_content_dir(&content_dir, &title);
+    options.width = 1440;
+    options.height = 900;
+    let host = wae::webview::open(options, Box::new(GuiIpc))
+        .map_err(|error| Error::new(format!("gui_open_failed: {error}")))?;
+    GUI_HOST.with(|slot| *slot.borrow_mut() = Some(host));
+    json_to_js(ctx.env(), &json!({ "opened": true, "title": title }))
+}
+
+/// Pump one batch of GUI events. Returns `false` once the window is gone.
+#[function(js_name = "pumpEvents")]
+fn pump_events(ctx: CallContext) -> Result<JsValue> {
+    let alive = GUI_HOST.with(|slot| match slot.borrow_mut().as_mut() {
+        Some(host) => host.pump(),
+        None => false,
+    });
+    ctx.env().boolean(alive)
+}
+
+/// Close the GUI window if one is open.
+#[function(js_name = "closeGui")]
+fn close_gui(ctx: CallContext) -> Result<JsValue> {
+    GUI_HOST.with(|slot| {
+        if let Some(mut host) = slot.borrow_mut().take() {
+            let _ = host.close();
+        }
+    });
+    Ok(ctx.env().null()?)
+}
+
+/// Whether a GUI window is currently open.
+#[function(js_name = "isGuiOpen")]
+fn is_gui_open(ctx: CallContext) -> Result<JsValue> {
+    ctx.env().boolean(is_gui_alive())
+}
+
+fn is_gui_alive() -> bool {
+    GUI_HOST.with(|slot| slot.borrow_mut().as_mut().is_some_and(|host| host.is_alive()))
+}
+
 fn parse_production(arg: JsValue) -> Result<media::scene::Production> {
     let raw = arg.get_named("production")?.as_string()?;
     serde_json::from_str(&raw).map_err(|error| Error::new(format!("invalid_input: {error}")))
@@ -827,5 +1071,10 @@ register_module![
     lookup_frame,
     inspect_delivery,
     check_archive,
-    render_with_subtitles
+    render_with_subtitles,
+    preview_range,
+    open_gui,
+    pump_events,
+    close_gui,
+    is_gui_open
 ];
