@@ -675,22 +675,116 @@ fn preview_range(ctx: CallContext) -> Result<JsValue> {
     let start = optional_u32(arg, "startFrame")?.ok_or_else(|| Error::new("previewRange requires startFrame"))?;
     let end = optional_u32(arg, "endFrame")?.ok_or_else(|| Error::new("previewRange requires endFrame"))?;
     let scale = optional_f32(arg, "scale")?;
+    let cache = optional_string(arg, "cacheDir")?.map(std::path::PathBuf::from);
     let path = std::path::Path::new(&out);
     if let Some(parent) = path.parent().filter(|parent| !parent.as_os_str().is_empty()) {
         std::fs::create_dir_all(parent).map_err(|error| Error::new(format!("cannot create output directory: {error}")))?;
     }
-    let stats = render_range(
+    let (data, _) = render_range_cached(
         &project,
         path,
         FrameRange { start, end },
         scale,
+        cache.as_deref(),
         &mut |done, total| {
             if done == total || done % 30 == 0 {
                 println!("opencut: preview {done}/{total}");
             }
         },
     )?;
-    json_to_js(ctx.env(), &to_json(&stats))
+    json_to_js(ctx.env(), &data)
+}
+
+/// FNV-1a builder shared by preview cache keys.
+struct Fnv(u64);
+
+impl Fnv {
+    fn new() -> Self {
+        Self(0xcbf2_9ce4_8422_2325)
+    }
+
+    fn write(&mut self, bytes: &[u8]) {
+        for byte in bytes {
+            self.0 ^= u64::from(*byte);
+            self.0 = self.0.wrapping_mul(0x0000_0100_0000_01b3);
+        }
+    }
+}
+
+/// Stable key for one preview: renderer version, project JSON, range, scale.
+fn preview_key(project: &str, range: FrameRange, scale: Option<f32>) -> String {
+    let mut hash = Fnv::new();
+    hash.write(env!("CARGO_PKG_VERSION").as_bytes());
+    hash.write(b"\x1f");
+    hash.write(project.as_bytes());
+    hash.write(b"\x1f");
+    hash.write(&range.start.to_le_bytes());
+    hash.write(&range.end.to_le_bytes());
+    hash.write(&scale.unwrap_or(1.0).to_le_bytes());
+    format!("{:016x}", hash.0)
+}
+
+/// Renders an interval, reusing `<cacheDir>/previews` when the inputs repeat.
+///
+/// The cache stores the MP4 plus its stats sidecar, so a hit returns the same
+/// provenance except for `backend`, `out`, `bytes` and `cached`. The preview is
+/// always copied to `out` because the WebView can only read inside its content
+/// directory, while the cache lives with the project.
+fn render_range_cached(
+    project: &str,
+    out: &std::path::Path,
+    range: FrameRange,
+    scale: Option<f32>,
+    cache: Option<&std::path::Path>,
+    progress: &mut dyn FnMut(u32, u32),
+) -> Result<(serde_json::Value, bool)> {
+    if range.end <= range.start {
+        return Err(Error::new("invalid_input: endFrame must be greater than startFrame"));
+    }
+    let key = preview_key(project, range, scale);
+    let Some(cache) = cache else {
+        let stats = render_range(project, out, range, scale, progress)?;
+        let mut data = to_json(&stats);
+        data["cacheKey"] = json!(key);
+        data["cached"] = json!(false);
+        return Ok((data, false));
+    };
+    let previews = cache.join("previews");
+    std::fs::create_dir_all(&previews).map_err(|error| Error::new(format!("cannot create cache directory: {error}")))?;
+    let cached = previews.join(format!("{key}.mp4"));
+    let sidecar = previews.join(format!("{key}.json"));
+    if let (Ok(text), Ok(metadata)) = (std::fs::read_to_string(&sidecar), std::fs::metadata(&cached)) {
+        if metadata.len() > 0 {
+            if let Ok(mut data) = serde_json::from_str::<serde_json::Value>(&text) {
+                copy_file(&cached, out)?;
+                data["out"] = json!(out.to_string_lossy());
+                data["bytes"] = json!(metadata.len());
+                data["backend"] = json!("cache");
+                data["cacheKey"] = json!(key);
+                data["cached"] = json!(true);
+                return Ok((data, true));
+            }
+        }
+    }
+    let stats = render_range(project, &cached, range, scale, progress)?;
+    let mut data = to_json(&stats);
+    if let Err(error) = std::fs::write(&sidecar, data.to_string()) {
+        println!("opencut: cannot write preview cache sidecar: {error}");
+    }
+    copy_file(&cached, out)?;
+    data["out"] = json!(out.to_string_lossy());
+    data["cacheKey"] = json!(key);
+    data["cached"] = json!(false);
+    Ok((data, false))
+}
+
+fn copy_file(from: &std::path::Path, to: &std::path::Path) -> Result<()> {
+    if from == to {
+        return Ok(());
+    }
+    std::fs::copy(from, to)
+        .map(|_| ())
+        .map_err(|error| Error::new(format!("cannot copy preview to {}: {error}", to.display())))
 }
 
 /// Shared interval render used by `previewRange` and the GUI host.
@@ -737,6 +831,7 @@ fn scaled_project(project: &str, scale: Option<f32>) -> Result<String> {
 /// of being resent per request.
 struct GuiState {
     content_dir: std::path::PathBuf,
+    cache_dir: Option<std::path::PathBuf>,
     project: String,
     session: serde_json::Value,
 }
@@ -791,9 +886,9 @@ impl GuiIpc {
             _ => return error_json("ipc_invalid", "preview.range frames must fit in u32"),
         };
         let scale = request.get("scale").and_then(|value| value.as_f64()).map(|value| value as f32);
-        let (project, content_dir) = match gui_state().lock() {
+        let (project, content_dir, cache_dir) = match gui_state().lock() {
             Ok(state) => match state.as_ref() {
-                Some(state) => (state.project.clone(), state.content_dir.clone()),
+                Some(state) => (state.project.clone(), state.content_dir.clone(), state.cache_dir.clone()),
                 None => return error_json("gui_not_ready", "no project is loaded"),
             },
             Err(_) => return error_json("gui_state_poisoned", "project state is unavailable"),
@@ -804,16 +899,23 @@ impl GuiIpc {
         }
         let name = format!("preview-{start}-{end}.mp4");
         let out = previews.join(&name);
-        let stats = render_range(&project, &out, FrameRange { start, end }, scale, &mut |done, total| {
-            if done % 10 == 0 || done == total {
-                let _ = sink.post(&json!({ "type": "progress", "done": done, "total": total }).to_string());
-            }
-        });
+        let stats = render_range_cached(
+            &project,
+            &out,
+            FrameRange { start, end },
+            scale,
+            cache_dir.as_deref(),
+            &mut |done, total| {
+                if done % 10 == 0 || done == total {
+                    let _ = sink.post(&json!({ "type": "progress", "done": done, "total": total }).to_string());
+                }
+            },
+        );
         match stats {
-            Ok(stats) => {
-                let mut data = to_json(&stats);
-                data["url"] = json!(format!("previews/{name}"));
-                data["out"] = json!(out.to_string_lossy());
+            Ok((data, _)) => {
+                let mut data = data;
+                let key = data["cacheKey"].as_str().unwrap_or("0").to_owned();
+                data["url"] = json!(format!("previews/{name}?k={key}"));
                 ok_json(&data)
             }
             Err(error) => error_json("preview_failed", &format!("{error}")),
@@ -846,6 +948,7 @@ fn open_gui(ctx: CallContext) -> Result<JsValue> {
         return json_to_js(ctx.env(), &json!({ "opened": false, "reason": "gui_already_open" }));
     }
     let content_dir = arg.get_named("contentDir")?.as_string()?;
+    let cache_dir = optional_string(arg, "cacheDir")?.map(std::path::PathBuf::from);
     let project = arg.get_named("project")?.as_string()?;
     let session = arg.get_named("session")?.as_string()?;
     let title = optional_string(arg, "title")?.unwrap_or_else(|| "OpenCut".to_owned());
@@ -857,6 +960,7 @@ fn open_gui(ctx: CallContext) -> Result<JsValue> {
             .map_err(|_| Error::new("gui_state_poisoned: project state is unavailable"))?;
         *state = Some(GuiState {
             content_dir: std::path::PathBuf::from(&content_dir),
+            cache_dir,
             project,
             session,
         });

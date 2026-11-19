@@ -132,12 +132,16 @@ export interface PreviewRangeOptions {
     endFrame: number;
     /** Raster scale in `0.1..=1.0`; timing and scenes stay unchanged. */
     scale?: number;
+    /** Project-local cache root; repeats of the same inputs reuse the MP4. */
+    cacheDir?: string;
 }
 
 /** What the GUI host shows on mount. Owned by the Node side, opaque to native. */
 export interface GuiOpenOptions {
     /** Staged VMZ static directory mapped to `https://app.local/`. */
     contentDir: string;
+    /** Project-local cache root for interval previews. */
+    cacheDir?: string;
     /** Window title. */
     title?: string;
     /** Compiled project JSON used for preview renders. */

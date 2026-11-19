@@ -590,13 +590,14 @@ export class Film {
      * The range is half-open and renumbered from zero, and `scale` shrinks the
      * raster without changing timing, so a review copy costs less than an
      * export. This is the same native path the GUI workbench calls. */
-    previewRange(startFrame: number, endFrame: number, outPath: string, options: { scale?: number } = {}): RenderResult {
+    previewRange(startFrame: number, endFrame: number, outPath: string, options: { scale?: number; cacheDir?: string } = {}): RenderResult {
         return native.previewRange({
             project: JSON.stringify(toWire(this.toProject())),
             out: outPath,
             startFrame,
             endFrame,
             scale: options.scale,
+            cacheDir: options.cacheDir,
         });
     }
 

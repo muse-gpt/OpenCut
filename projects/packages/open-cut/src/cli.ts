@@ -160,6 +160,7 @@ if (command === 'gui') {
     try {
         const opened = native.openGui({
             contentDir,
+            cacheDir: path.join(path.dirname(entry), '.cache', 'opencut'),
             title,
             project: projectJson,
             session: JSON.stringify(session),

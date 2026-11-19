@@ -76,7 +76,7 @@
 
                 <div class="result" v-if="result">
                     <div class="result-line">
-                        <span class="ok">已渲染</span>
+                        <span class="ok">{{ resultCached ? '缓存命中' : '已渲染' }}</span>
                         <span class="mono">{{ resultSummary }}</span>
                     </div>
                     <div class="result-path mono">{{ resultPath }}</div>
@@ -425,6 +425,7 @@ export default class WorkbenchPage {
     progressTotal = 0;
     videoUrl = "";
     result = null;
+    resultCached = false;
     resultSummary = "";
     resultPath = "";
     rangeHint = "";
@@ -506,13 +507,15 @@ export default class WorkbenchPage {
             this.rendering = false;
             this.error = "";
             this.result = data;
+            this.resultCached = data.cached === true;
             this.progressStyle = "width: 100%";
             this.resultPath = String(data.out || "");
             const seconds = (Number(data.frames) || 0) / (Number(data.fps) || 30);
             this.resultSummary = `${data.frames} 帧 · ${data.width}x${data.height} · ${seconds.toFixed(2)}s · ${this.formatBytes(data.bytes)}`;
-            const stamp = Date.now();
-            this.videoUrl = `${data.url}?t=${stamp}`;
-            this.statusText = "区间预览已就绪";
+            // The URL already carries the cache key, so a changed project is a
+            // new URL and an unchanged one can stay browser-cached.
+            this.videoUrl = data.url;
+            this.statusText = this.resultCached ? "区间预览来自缓存" : "区间预览已就绪";
             return;
         }
         this.rendering = false;
