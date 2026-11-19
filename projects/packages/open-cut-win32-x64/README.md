@@ -11,6 +11,6 @@ full render path is available today.
 ```ts
 import { renderFile } from '@wae/open-cut';
 
-const stats = renderFile('films/my-film.ts', { out: 'out/my-film.mp4' });
+const stats = renderFile('films/my-film.ts', { out: 'dist/my-film.mp4' });
 console.log(stats.out, stats.bytes);
 ```

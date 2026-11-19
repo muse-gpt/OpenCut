@@ -12,7 +12,7 @@ import { Film, card, text } from '@wae/open-cut';
 const film = new Film({ width: 1280, height: 720, fps: 30 })
     .scene(card({ title: 'Hello' }));
 
-film.render('out/hello.mp4');
+film.render('dist/hello.mp4');
 ```
 
 ## CLI
@@ -46,7 +46,7 @@ the CLI gate prints, so a host can run the checks without the CLI:
 ```ts
 import { verifyRender } from '@wae/open-cut';
 
-const stats = film.render('out/film.mp4');
+const stats = film.render('dist/film.mp4');
 const failed = verifyRender(stats).filter((check) => !check.ok);
 ```
 

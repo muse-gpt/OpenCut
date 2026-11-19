@@ -104,12 +104,12 @@ film.audio({
 ```bash
 pnpm install
 pnpm run build                       # native binding + TypeScript
-node --experimental-strip-types films/demo.ts out/demo.mp4
-node --experimental-strip-types films/design-tokens.ts out/tokens.mp4
+node --experimental-strip-types films/demo.ts dist/demo.mp4
+node --experimental-strip-types films/design-tokens.ts dist/tokens.mp4
 
 # CLI
-node packages/open-cut/dist/cli.js render films/demo.ts --out out/demo.mp4
-node packages/open-cut/dist/cli.js preview films/demo.ts --frame 90 --out out/frame.png
+node packages/open-cut/dist/cli.js render films/demo.ts --out dist/demo.mp4
+node packages/open-cut/dist/cli.js preview films/demo.ts --frame 90 --out dist/frame.png
 node packages/open-cut/dist/cli.js build
 ```
 

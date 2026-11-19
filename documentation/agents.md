@@ -3,7 +3,7 @@
 ## CLI 命令
 
 ```sh
-open-cut render films/demo.ts -o out/demo.mp4
+open-cut render films/demo.ts -o dist/demo.mp4
 open-cut preview films/demo.ts --frame 90 -o frame.png
 open-cut build                              # 看 native 版本和 source revision
 ```

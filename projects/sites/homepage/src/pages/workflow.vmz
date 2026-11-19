@@ -70,7 +70,7 @@
                     Render a single frame to check composition, fonts and color
                     before committing to the full encode.
                 </p>
-                <pre><code>open-cut preview films/demo.ts --frame 90 -o out/frame.png</code></pre>
+                <pre><code>open-cut preview films/demo.ts --frame 90 -o dist/frame.png</code></pre>
             </li>
             <li>
                 <h2>Render and trace the result</h2>
@@ -79,7 +79,7 @@
                     version and source revision produced it. The same spec and
                     seed should reproduce the same bytes.
                 </p>
-                <pre><code>open-cut render films/demo.ts -o out/demo.mp4</code></pre>
+                <pre><code>open-cut render films/demo.ts -o dist/demo.mp4</code></pre>
                 <pre><code>open-cut build</code></pre>
             </li>
         </ol>
