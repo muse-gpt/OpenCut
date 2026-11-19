@@ -109,6 +109,13 @@ export interface NodeOptions {
     /** Stable identity for revisions, locks and notes. */
     id?: string;
     /**
+     * Which space the node is painted in. `world` (default) belongs to the
+     * drawing and moves with the camera, so a push-in scales it. `screen` is
+     * painted after the lens at the same scene clock, so an annotation keeps
+     * its size and position and a push-in never crops it.
+     */
+    space?: 'world' | 'screen';
+    /**
      * Motion with keys in seconds. By default keys run on the scene clock, the
      * same clock the renderer samples. Set `timeBase: 'local'` to author keys
      * relative to the item's own start; compiling adds that offset once, at
@@ -129,8 +136,11 @@ function frames(seconds: number, fps: number): number {
     return Math.round(seconds * fps);
 }
 
-function compileItem(item: ItemInput, fps: number, sceneSeconds: number): Item {
+function compileItem(item: ItemInput, fps: number, sceneSeconds: number, depth = 0): Item {
     const out: Record<string, unknown> = { ...item };
+    if (depth > 0 && item['space'] === 'screen') {
+        throw new Error(`item \`${String(item.id ?? item.kind)}\`: screen space only applies to top-level scene nodes, because nested items paint into their parent's buffer`);
+    }
     const atFrames = frames((item.at ?? 0) as number, fps);
     out['at'] = atFrames;
     out['dur'] = Math.max(1, frames((item.dur ?? sceneSeconds) as number, fps));
@@ -144,7 +154,7 @@ function compileItem(item: ItemInput, fps: number, sceneSeconds: number): Item {
     // A layer's children keep their own (layer-relative) timing, in seconds.
     if (item.kind === 'layer' && Array.isArray(item['items'])) {
         const children = item['items'] as ItemInput[];
-        out['items'] = children.map((child) => compileItem(child, fps, sceneSeconds));
+        out['items'] = children.map((child) => compileItem(child, fps, sceneSeconds, depth + 1));
     }
     return out as unknown as Item;
 }
@@ -389,7 +399,7 @@ export class Film {
             scenes,
             components: this.componentList.map((component) => ({
                 id: component.id,
-                items: component.items.map((item) => compileItem(item, this.fps, this.seconds)),
+                items: component.items.map((item) => compileItem(item, this.fps, this.seconds, 1)),
             })),
             audio: this.audioSpec,
             camera: this.cameraKeys,
