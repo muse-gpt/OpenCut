@@ -101,6 +101,8 @@ interface PanelEntry {
     dialogue: string | null;
     camera: string | null;
     sound: string | null;
+    /** Scene node ids this panel must show. */
+    witness: string[];
     notes: string[];
 }
 
@@ -176,6 +178,7 @@ function shotIndex(film: Film): { shots: ShotEntry[]; cues: CueEntry[] } {
                     dialogue?: string;
                     camera?: string;
                     sound?: string;
+                    witness?: string[];
                     notes?: string[];
                 };
                 return {
@@ -187,6 +190,7 @@ function shotIndex(film: Film): { shots: ShotEntry[]; cues: CueEntry[] } {
                     dialogue: panel.dialogue ?? null,
                     camera: panel.camera ?? null,
                     sound: panel.sound ?? null,
+                    witness: Array.isArray(panel.witness) ? panel.witness : [],
                     notes: Array.isArray(panel.notes) ? panel.notes : [],
                 };
             }),
@@ -691,8 +695,10 @@ if (command === 'shots') {
     catch (error) {
         fail(error instanceof Error ? error.message : String(error), 1);
     }
-    // A panel without a purpose has no evidence to show, so the sheet cannot
-    // claim the shot is reviewable. That is a review finding, not a schema error.
+    // A panel without a purpose has no evidence to show, and a panel without a
+    // witness never ties that evidence to a scene object. Either way the sheet
+    // cannot claim the shot is reviewable. That is a review finding, not a
+    // schema error.
     const findings: string[] = [];
     for (const shot of index.shots) {
         for (const panel of shot.panels) {
@@ -701,6 +707,9 @@ if (command === 'shots') {
             }
             if (panel.absolute === null) {
                 findings.push(`panel ${panel.id} (shot ${shot.id}) has no absolute range: scene \`${shot.scene}\` is missing`);
+            }
+            if (panel.witness.length === 0) {
+                findings.push(`panel ${panel.id} (shot ${shot.id}) binds no witness: the evidence is not tied to any scene node`);
             }
         }
     }
@@ -716,6 +725,9 @@ if (command === 'shots') {
             console.log(`  panel ${panel.id} [${absolute}] purpose: ${panel.purpose.trim() || '(not written)'}`);
             if (panel.composition.trim().length > 0) {
                 console.log(`    composition: ${panel.composition}`);
+            }
+            if (panel.witness.length > 0) {
+                console.log(`    sees: ${panel.witness.join(', ')}`);
             }
             const notes: string[] = [];
             if (panel.dialogue) notes.push(`dialogue: ${panel.dialogue}`);

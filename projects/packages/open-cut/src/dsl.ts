@@ -1028,6 +1028,12 @@ export interface PanelInput {
     sound?: string;
     /** Safe area in normalized panel coordinates `[x0, y0, x1, y1]`. */
     safeArea?: [number, number, number, number];
+    /**
+     * Scene node ids this panel must show: the evidence is bound to the same
+     * objects the picture is built from, so validation catches a renamed node
+     * or a node that is off screen for the whole panel.
+     */
+    witness?: string[];
     notes?: string[];
 }
 
