@@ -16,6 +16,7 @@
  *   open-cut scenes <film.mjs|film.ts> --out file.png [--json]
  *   open-cut seams <film.mjs|film.ts> --out file.png [--json]
  *   open-cut at <film.mjs|film.ts> --frame N [--json]
+ *   open-cut shots <film.mjs|film.ts> [--json]
  *   open-cut storyboard <film.mjs|film.ts> --out dir [--contact file.png] [--timeline file.png] [--motion file.mp4] [--covers n] [--only p1,p2] [--scale n] [--rows n] [--page 1600x1200] [--json]
  *   open-cut preview <film.mjs|film.ts> --frame N --out file.png [--json]
  *   open-cut preview <film.mjs|film.ts> --at seconds --out file.png [--json]
@@ -88,6 +89,105 @@ function secondsToFrame(value: string, fps: number, name: string): number {
     return Math.round(seconds * fps);
 }
 
+/** One panel as the review surfaces see it: shot-local and absolute frames. */
+interface PanelEntry {
+    id: string;
+    range: [number, number];
+    absolute: [number, number] | null;
+    purpose: string;
+    composition: string;
+    dialogue: string | null;
+    camera: string | null;
+    sound: string | null;
+    notes: string[];
+}
+
+/** One shot resolved against the compiled scene timeline. */
+interface ShotEntry {
+    id: string;
+    scene: string;
+    locked: boolean;
+    /** Absolute half-open frames, or `null` when the referenced scene is missing. */
+    range: [number, number] | null;
+    panels: PanelEntry[];
+}
+
+interface CueEntry {
+    id: string;
+    shot: string;
+    range: [number, number];
+    absolute: [number, number] | null;
+    text: string;
+    speaker: string | null;
+}
+
+/**
+ * Resolves the production book against the compiled scenes.
+ *
+ * The book keeps ranges shot-local; every review surface shows absolute frames
+ * so a picked block matches what a render reports. A shot whose scene is
+ * missing is reported as `null`, never guessed.
+ */
+function shotIndex(film: Film): { shots: ShotEntry[]; cues: CueEntry[] } {
+    const book = film.toProduction() as { shots?: unknown[]; cues?: unknown[] };
+    const rawShots = Array.isArray(book.shots) ? book.shots : [];
+    const rawCues = Array.isArray(book.cues) ? book.cues : [];
+    const shots: ShotEntry[] = rawShots.map((entry) => {
+        const shot = entry as { id: string; scene: string; locked?: boolean; panels?: unknown[] };
+        const panelList = Array.isArray(shot.panels) ? shot.panels : [];
+        let range: [number, number] | null = null;
+        try {
+            range = film.sceneRange(shot.scene);
+        }
+        catch {
+            range = null;
+        }
+        return {
+            id: shot.id,
+            scene: shot.scene,
+            locked: shot.locked === true,
+            range,
+            panels: panelList.map((value) => {
+                const panel = value as {
+                    id: string;
+                    range: [number, number];
+                    purpose?: string;
+                    composition?: string;
+                    dialogue?: string;
+                    camera?: string;
+                    sound?: string;
+                    notes?: string[];
+                };
+                return {
+                    id: panel.id,
+                    range: panel.range,
+                    absolute: range === null ? null : [range[0] + panel.range[0], range[0] + panel.range[1]],
+                    purpose: panel.purpose ?? '',
+                    composition: panel.composition ?? '',
+                    dialogue: panel.dialogue ?? null,
+                    camera: panel.camera ?? null,
+                    sound: panel.sound ?? null,
+                    notes: Array.isArray(panel.notes) ? panel.notes : [],
+                };
+            }),
+        };
+    });
+    const cues: CueEntry[] = rawCues.map((entry) => {
+        const cue = entry as { id: string; shot: string; range: [number, number]; text: string; speaker?: string };
+        const shot = shots.find((item) => item.id === cue.shot);
+        const base = shot && shot.range ? shot.range[0] : null;
+        return {
+            id: cue.id,
+            shot: cue.shot,
+            range: cue.range,
+            absolute: base === null ? null : [base + cue.range[0], base + cue.range[1]],
+            text: cue.text,
+            speaker: cue.speaker ?? null,
+        };
+    });
+    return { shots, cues };
+}
+
 const args = process.argv.slice(2);
 const command = args[0];
 
@@ -130,7 +230,7 @@ if (command === 'gui') {
     const projectJson = JSON.stringify(toWire(film.toProject()));
     const revision = createHash('sha256').update(projectJson).digest('hex').slice(0, 12);
     const book = film.toProduction() as { shots?: unknown[]; cues?: unknown[]; assets?: unknown[] };
-    const shots = Array.isArray(book.shots) ? book.shots : [];
+    const { shots: shotList, cues: cueList } = shotIndex(film);
     const session = {
         schema: 'open-cut.session/v0',
         name: path.basename(entry, path.extname(entry)),
@@ -146,13 +246,12 @@ if (command === 'gui') {
             scenes: film.scenes,
         },
         production: {
-            shots: shots.length,
-            panels: shots.reduce<number>((sum, shot) => {
-                const panels = (shot as { panels?: unknown[] }).panels;
-                return sum + (Array.isArray(panels) ? panels.length : 0);
-            }, 0),
-            cues: Array.isArray(book.cues) ? book.cues.length : 0,
+            shots: shotList.length,
+            panels: shotList.reduce<number>((sum, shot) => sum + shot.panels.length, 0),
+            cues: cueList.length,
             assets: Array.isArray(book.assets) ? book.assets.length : 0,
+            shotList,
+            cueList,
         },
         preview: { scale, autoPreview },
     };
@@ -551,6 +650,74 @@ if (command === 'at') {
         fail(error instanceof Error ? error.message : String(error), 1);
     }
     process.exit(0);
+}
+
+if (command === 'shots') {
+    const script = args[1];
+    if (!script) {
+        fail('shots requires a film script path', 2);
+    }
+    const module = await import(pathToFileURL(path.resolve(script)).href);
+    const film: unknown = module.default ?? module.film;
+    if (!(film instanceof Film)) {
+        fail('the film module must default-export a Film instance', 2);
+    }
+    let report: ReturnType<Film['validateProduction']>;
+    let index: ReturnType<typeof shotIndex>;
+    try {
+        report = film.validateProduction();
+        index = shotIndex(film);
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 1);
+    }
+    // A panel without a purpose has no evidence to show, so the sheet cannot
+    // claim the shot is reviewable. That is a review finding, not a schema error.
+    const findings: string[] = [];
+    for (const shot of index.shots) {
+        for (const panel of shot.panels) {
+            if (panel.purpose.trim().length === 0) {
+                findings.push(`panel ${panel.id} (shot ${shot.id}) has no purpose: nothing says what the audience must see`);
+            }
+            if (panel.absolute === null) {
+                findings.push(`panel ${panel.id} (shot ${shot.id}) has no absolute range: scene \`${shot.scene}\` is missing`);
+            }
+        }
+    }
+    if (args.includes('--json')) {
+        console.log(JSON.stringify({ ok: report.ok && findings.length === 0, problems: report.problems, findings, ...index }, null, 2));
+        process.exit(report.ok && findings.length === 0 ? 0 : 1);
+    }
+    for (const shot of index.shots) {
+        const range = shot.range === null ? 'scene missing' : `${shot.range[0]}–${shot.range[1]}`;
+        console.log(`shot ${shot.id} [${range}]${shot.locked ? ' locked' : ''} -> scene ${shot.scene}`);
+        for (const panel of shot.panels) {
+            const absolute = panel.absolute === null ? '—' : `${panel.absolute[0]}–${panel.absolute[1]}`;
+            console.log(`  panel ${panel.id} [${absolute}] purpose: ${panel.purpose.trim() || '(not written)'}`);
+            if (panel.composition.trim().length > 0) {
+                console.log(`    composition: ${panel.composition}`);
+            }
+            const notes: string[] = [];
+            if (panel.dialogue) notes.push(`dialogue: ${panel.dialogue}`);
+            if (panel.camera) notes.push(`camera: ${panel.camera}`);
+            if (panel.sound) notes.push(`sound: ${panel.sound}`);
+            if (notes.length > 0) {
+                console.log(`    ${notes.join(' · ')}`);
+            }
+        }
+        for (const cue of index.cues.filter((item) => item.shot === shot.id)) {
+            const absolute = cue.absolute === null ? '—' : `${cue.absolute[0]}–${cue.absolute[1]}`;
+            console.log(`  cue ${cue.id} [${absolute}] ${cue.text}`);
+        }
+    }
+    for (const problem of report.problems) {
+        console.log(`FAIL ${problem}`);
+    }
+    for (const finding of findings) {
+        console.log(`REVIEW ${finding}`);
+    }
+    console.log(`${report.ok && findings.length === 0 ? 'ok' : 'FAIL'}: ${index.shots.length} shots, ${index.shots.reduce((sum, shot) => sum + shot.panels.length, 0)} panels, ${index.cues.length} cues`);
+    process.exit(report.ok && findings.length === 0 ? 0 : 1);
 }
 
 if (command === 'scenes') {
