@@ -106,7 +106,7 @@ jobs:
           targets: ${{ matrix.cross_target }}
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.28.0
 
@@ -170,7 +170,7 @@ jobs:
           echo "publishing ${{ needs.provenance.outputs.tag }} @ $head"
 
       - name: Install pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10.28.0
 
