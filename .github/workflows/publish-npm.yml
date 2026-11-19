@@ -233,8 +233,18 @@ jobs:
         run: |
           set -euo pipefail
           for short in win32-x64 linux-x64 linux-arm64 darwin-x64 darwin-arm64; do
-            pnpm --dir "packages/open-cut-$short" publish --no-git-checks --access public --provenance
+            dir="packages/open-cut-$short"
+            # pnpm 10 has no `--provenance` and forwards unknown flags to npm,
+            # which then rejects `--no-git-checks` (EUSAGE). Pack with pnpm so
+            # workspace protocols are rewritten, publish the tarball with npm
+            # so OIDC provenance is minted.
+            pnpm --dir "$dir" pack --silent >/dev/null
+            npm publish "$dir"/*.tgz --access public --provenance
           done
 
       - name: Publish main package to npm
-        run: pnpm --dir packages/open-cut publish --no-git-checks --access public --provenance
+        shell: bash
+        run: |
+          set -euo pipefail
+          pnpm --dir packages/open-cut pack --silent >/dev/null
+          npm publish packages/open-cut/*.tgz --access public --provenance

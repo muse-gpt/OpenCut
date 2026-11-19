@@ -1,12 +1,28 @@
+# OS
+.DS_Store
+
+# IDE
+.idea/
+*.iml
+*.log
+*.txt
+
+# Rust
 target/
 .cargo/
+
+# Node
 node_modules/
 dist/
-.cache/
+out/
 *.node
-*.mp4
+*.wasm
+
+# OpenCut
 films/assets/
-*.log
-.DS_Store
-.idea/
+*.wav
+*.mp4
+
+# Nifty local cache
 .env.placeholder.local
+.cache/
