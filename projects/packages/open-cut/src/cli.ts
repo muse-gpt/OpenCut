@@ -1004,7 +1004,7 @@ if (command === 'compare') {
             console.log(JSON.stringify(page, null, 2));
             process.exit(0);
         }
-        console.log(`comparison: ${page.panels.join(', ')} -> ${page.path}`);
+        console.log(`comparison: ${page.panels.join(', ')} · frames ${[...new Set(page.frames)].join(', ')} -> ${page.path}`);
     }
     catch (error) {
         fail(error instanceof Error ? error.message : String(error), 1);

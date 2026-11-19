@@ -448,7 +448,7 @@ fn write_comparison(ctx: CallContext) -> Result<JsValue> {
     let options = storyboard_options(arg)?;
     let only = panel_filter(arg)?;
     let page = media::render::write_comparison(&before, &project, &production, std::path::Path::new(&out), &only, &options).map_err(core_error)?;
-    json_to_js(ctx.env(), &json!({ "path": page.path, "panels": page.panels }))
+    json_to_js(ctx.env(), &json!({ "path": page.path, "panels": page.panels, "frames": page.frames }))
 }
 
 /// Write a chapter overview: one row per shot with its first and last frame.

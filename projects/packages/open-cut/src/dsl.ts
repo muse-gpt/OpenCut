@@ -484,12 +484,13 @@ export class Film {
         });
     }
 
-    /** Writes a before/after page: each panel's middle frame from two
-     *  revisions, rendered with the same painter.
+    /** Writes a before/after page: every panel's first, middle and last frame
+     *  from two revisions, rendered with the same painter, so a camera move
+     *  reads as motion instead of one still.
      *
      *  `before` is another compiled project (the previous revision). `only`
      *  limits the page to those panel handles. */
-    comparison(before: Project, outPath: string, options: StoryboardOptions & { only?: string[] } = {}): { path: string; panels: string[] } {
+    comparison(before: Project, outPath: string, options: StoryboardOptions & { only?: string[] } = {}): { path: string; panels: string[]; frames: number[] } {
         const { only, ...layout } = options;
         return native.writeComparison({
             before: JSON.stringify(toWire(before)),
