@@ -64,7 +64,7 @@ export function packageName(target: Target): string {
 }
 
 export function packageDir(root: string, target: Target): string {
-    return path.join(root, 'packages', packageName(target));
+    return path.join(root, 'projects', 'packages', packageName(target));
 }
 
 export function nodeFileName(target: Target): string {

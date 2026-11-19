@@ -32,7 +32,7 @@ import {
     shape,
     text,
     video,
-} from '../packages/open-cut/dist/index.js';
+} from '../../packages/open-cut/dist/index.js';
 
 const asset = (name: string) => fileURLToPath(new URL(`./assets/${name}`, import.meta.url));
 

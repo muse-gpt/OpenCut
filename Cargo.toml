@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
-members = ["crates/napi"]
-default-members = ["crates/napi"]
+members = ["projects/crates/napi"]
+default-members = ["projects/crates/napi"]
 
 [workspace.package]
 version = "0.0.1"

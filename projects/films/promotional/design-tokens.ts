@@ -6,7 +6,7 @@
  * `ink` role; `accent` is locked and cannot be overridden.
  */
 import { pathToFileURL } from 'node:url';
-import { Film, colorToken, text } from '../packages/open-cut/dist/index.js';
+import { Film, colorToken, text } from '../../packages/open-cut/dist/index.js';
 
 const ink = colorToken('ink');
 const accent = colorToken('accent');

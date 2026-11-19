@@ -11,7 +11,7 @@
  * 运行:node --experimental-strip-types films/voice-sfx.ts voice-sfx.mp4
  */
 import { pathToFileURL } from 'node:url';
-import { Film, bands, glow, grain, shape, text } from '../packages/open-cut/dist/index.js';
+import { Film, bands, glow, grain, shape, text } from '../../packages/open-cut/dist/index.js';
 
 const INK = '#e9f0fb';
 const ACCENT = '#7aa2ff';

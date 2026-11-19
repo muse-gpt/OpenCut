@@ -30,7 +30,7 @@ import {
     progress,
     shape,
     text,
-} from '../packages/open-cut/dist/index.js';
+} from '../../packages/open-cut/dist/index.js';
 
 const film = new Film({ width: 1920, height: 1080, fps: 30, supersample: 1.5 });
 

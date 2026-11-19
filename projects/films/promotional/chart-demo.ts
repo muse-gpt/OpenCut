@@ -9,7 +9,7 @@
  * Run: node --experimental-strip-types films/chart-demo.ts chart-demo.mp4
  */
 import { pathToFileURL } from 'node:url';
-import { Film, anim, chart, footnote, grain, text } from '../packages/open-cut/dist/index.js';
+import { Film, anim, chart, footnote, grain, text } from '../../packages/open-cut/dist/index.js';
 
 const film = new Film({ width: 1920, height: 1080, fps: 30 });
 
