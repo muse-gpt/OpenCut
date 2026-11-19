@@ -1,6 +1,6 @@
 {
     "name": "@wae/open-cut",
-    "version": "0.0.0",
+    "version": "0.0.1",
     "description": "OpenCut code-first video editor: TypeScript DSL, Node API and `open-cut` CLI",
     "license": "Apache-2.0",
     "type": "module",
