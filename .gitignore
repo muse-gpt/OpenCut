@@ -26,3 +26,6 @@ films/assets/
 # Nifty local cache
 .env.placeholder.local
 .cache/
+
+# npm secrets (nifty)
+.secrets/
