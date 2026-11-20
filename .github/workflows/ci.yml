@@ -28,14 +28,14 @@ jobs:
       - run: pnpm run build
       # Loading the addon and validating a production is the cross-platform
       # gate: the scene contract and the painter run on every host.
-      - run: node packages/open-cut/dist/cli.js validate films/design-tokens.ts
+      - run: node projects/packages/open-cut/dist/cli.js validate projects/films/promotional/design-tokens.ts
       # MP4 encoding runs through Media Foundation, so the render/verify gate
       # is Windows-only until another encoder backend lands upstream.
       - if: matrix.os == 'windows-latest'
-        run: node packages/open-cut/dist/cli.js render films/design-tokens.ts --out design-tokens.mp4
+        run: node projects/packages/open-cut/dist/cli.js render projects/films/promotional/design-tokens.ts --out design-tokens.mp4
       - if: matrix.os == 'windows-latest'
-        run: node packages/open-cut/dist/cli.js verify films/design-tokens.ts --out design-tokens.mp4 --json
+        run: node projects/packages/open-cut/dist/cli.js verify projects/films/promotional/design-tokens.ts --out design-tokens.mp4 --json
       - if: matrix.os == 'windows-latest'
-        run: node packages/open-cut/dist/cli.js render films/chart-demo.ts --out chart-demo.mp4
+        run: node projects/packages/open-cut/dist/cli.js render projects/films/promotional/chart-demo.ts --out chart-demo.mp4
       - if: matrix.os == 'windows-latest'
-        run: node packages/open-cut/dist/cli.js verify films/chart-demo.ts --out chart-demo.mp4 --json
+        run: node projects/packages/open-cut/dist/cli.js verify projects/films/promotional/chart-demo.ts --out chart-demo.mp4 --json
