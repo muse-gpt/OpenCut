@@ -5,7 +5,7 @@ version = 4
 [[package]]
 name = "atlas-cloud"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-crypto",
  "boost-net",
@@ -66,7 +66,7 @@ dependencies = [
 [[package]]
 name = "boost-collection"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-collection-macro",
 ]
@@ -74,7 +74,7 @@ dependencies = [
 [[package]]
 name = "boost-collection-macro"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -84,12 +84,12 @@ dependencies = [
 [[package]]
 name = "boost-console"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 
 [[package]]
 name = "boost-crypto"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-random",
  "data-encoding",
@@ -102,7 +102,7 @@ dependencies = [
 [[package]]
 name = "boost-harness"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-console",
  "boost-harness-macro",
@@ -114,7 +114,7 @@ dependencies = [
 [[package]]
 name = "boost-harness-macro"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -124,7 +124,7 @@ dependencies = [
 [[package]]
 name = "boost-math"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-collection",
 ]
@@ -132,19 +132,20 @@ dependencies = [
 [[package]]
 name = "boost-net"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-crypto",
  "boost-random",
  "data-binary-asn1",
  "data-encoding",
+ "serde_json",
  "url",
 ]
 
 [[package]]
 name = "boost-random"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-math",
 ]
@@ -152,7 +153,7 @@ dependencies = [
 [[package]]
 name = "boost-source"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "serde",
 ]
@@ -191,12 +192,12 @@ dependencies = [
 [[package]]
 name = "data-binary-asn1"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 
 [[package]]
 name = "data-binary-core"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-harness",
 ]
@@ -204,7 +205,7 @@ dependencies = [
 [[package]]
 name = "data-binary-ttf"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "data-binary-core",
 ]
@@ -212,12 +213,12 @@ dependencies = [
 [[package]]
 name = "data-checksum"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 
 [[package]]
 name = "data-compression"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "data-binary-core",
  "data-checksum",
@@ -226,7 +227,7 @@ dependencies = [
 [[package]]
 name = "data-encoding"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 
 [[package]]
 name = "der"
@@ -293,7 +294,7 @@ dependencies = [
 [[package]]
 name = "geometry"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry-motion",
  "geometry-types",
@@ -302,7 +303,7 @@ dependencies = [
 [[package]]
 name = "geometry-motion"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry-types",
  "serde",
@@ -311,7 +312,7 @@ dependencies = [
 [[package]]
 name = "geometry-types"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "serde",
 ]
@@ -330,7 +331,7 @@ dependencies = [
 [[package]]
 name = "hardware-backend-dx12"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "hardware-capability",
  "hardware-emitter",
@@ -345,7 +346,7 @@ dependencies = [
 [[package]]
 name = "hardware-capability"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "serde",
 ]
@@ -353,7 +354,7 @@ dependencies = [
 [[package]]
 name = "hardware-emitter"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "hardware-harness",
  "hardware-optimize",
@@ -365,12 +366,12 @@ dependencies = [
 [[package]]
 name = "hardware-harness"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 
 [[package]]
 name = "hardware-ir"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-collection",
  "boost-math",
@@ -383,7 +384,7 @@ dependencies = [
 [[package]]
 name = "hardware-optimize"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "hardware-ir",
  "hardware-program",
@@ -394,7 +395,7 @@ dependencies = [
 [[package]]
 name = "hardware-program"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "serde",
  "serde_json",
@@ -404,7 +405,7 @@ dependencies = [
 [[package]]
 name = "hardware-scheduler"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "boost-math",
  "hardware-capability",
@@ -418,7 +419,7 @@ dependencies = [
 [[package]]
 name = "hardware-types"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "serde",
 ]
@@ -573,7 +574,7 @@ checksum = "47d9d19d1d6efa0109d2f65ff4c85cddd50bd572e5a00127ab10987290bcefae"
 [[package]]
 name = "media"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "media-audio",
  "media-canvas",
@@ -599,7 +600,7 @@ dependencies = [
 [[package]]
 name = "media-audio"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "media-codec",
  "media-dsp",
@@ -612,7 +613,7 @@ dependencies = [
 [[package]]
 name = "media-canvas"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-image",
@@ -622,7 +623,7 @@ dependencies = [
 [[package]]
 name = "media-codec"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "media-image",
  "media-types",
@@ -634,12 +635,12 @@ dependencies = [
 [[package]]
 name = "media-dsp"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 
 [[package]]
 name = "media-gpu"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "hardware-backend-dx12",
  "hardware-ir",
@@ -654,7 +655,7 @@ dependencies = [
 [[package]]
 name = "media-harness"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "serde",
 ]
@@ -662,7 +663,7 @@ dependencies = [
 [[package]]
 name = "media-image"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "data-checksum",
  "data-compression",
@@ -673,7 +674,7 @@ dependencies = [
 [[package]]
 name = "media-layout"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-image",
@@ -685,7 +686,7 @@ dependencies = [
 [[package]]
 name = "media-motion"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-types",
@@ -695,7 +696,7 @@ dependencies = [
 [[package]]
 name = "media-particles"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry-types",
  "media-image",
@@ -705,7 +706,7 @@ dependencies = [
 [[package]]
 name = "media-pixel"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "media-image",
  "media-types",
@@ -715,7 +716,7 @@ dependencies = [
 [[package]]
 name = "media-post"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry-motion",
  "geometry-types",
@@ -730,7 +731,7 @@ dependencies = [
 [[package]]
 name = "media-raster"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-image",
@@ -740,7 +741,7 @@ dependencies = [
 [[package]]
 name = "media-render"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-audio",
@@ -767,7 +768,7 @@ dependencies = [
 [[package]]
 name = "media-scene"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-image",
@@ -780,7 +781,7 @@ dependencies = [
 [[package]]
 name = "media-synthesis"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "media-dsp",
  "media-types",
@@ -790,7 +791,7 @@ dependencies = [
 [[package]]
 name = "media-text"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "data-binary-ttf",
  "geometry",
@@ -803,12 +804,12 @@ dependencies = [
 [[package]]
 name = "media-types"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 
 [[package]]
 name = "media-vector"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-types",
@@ -818,7 +819,7 @@ dependencies = [
 [[package]]
 name = "media-voice"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "atlas-cloud",
  "boost-collection",
@@ -830,7 +831,7 @@ dependencies = [
 [[package]]
 name = "media-voxel"
 version = "0.1.0"
-source = "git+https://github.com/oovm/boost.rs.git?rev=5e859e3fc3ef50e3304bd766b8b4058541df325b#5e859e3fc3ef50e3304bd766b8b4058541df325b"
+source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "geometry",
  "media-types",
