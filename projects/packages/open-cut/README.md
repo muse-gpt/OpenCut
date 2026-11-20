@@ -18,8 +18,8 @@ film.render('dist/hello.mp4');
 ## CLI
 
 ```bash
-open-cut render  <film.ts> --out out.mp4 [--from s] [--to s] [--scene id] [--json]
-open-cut verify  <film.ts> --out out.mp4 [--from s] [--to s] [--json]
+open-cut render  <film.ts> --out out.mp4 [--from s] [--to s] [--scene id] [--compositor auto|gpu|cpu] [--json]
+open-cut verify  <film.ts> --out out.mp4 [--from s] [--to s] [--compositor auto|gpu|cpu] [--json]
 open-cut preview <film.ts> --frame N --out frame.png [--json]
 open-cut preview <film.ts> --at s --out frame.png [--json]
 open-cut preview <film.ts> --from s --to s --out dir/ [--json]
@@ -37,6 +37,12 @@ open-cut version
 
 A film module must default-export a `Film` instance. Exit codes: `0` success,
 `1` runtime failure, `2` usage error.
+
+For exports, OpenCut uses the explicit `--compositor` flag or the TypeScript
+`compositor` option first, then `OPENCUT_COMPOSITOR`, then `auto`. Use `gpu`
+to require GPU rendering, `cpu` to force CPU, or `auto` to prefer GPU and report
+any fallback to CPU. Vulkan and Direct3D 12 are backend names; read the actual
+choice in the render result's `compositor` field.
 
 ## Delivery checks from code
 

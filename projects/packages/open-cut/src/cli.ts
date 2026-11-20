@@ -4,7 +4,7 @@
  *
  * Usage:
  *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--audio-codec aac|flac] [--limiter-db n] [--compositor auto|gpu|cpu] [--burn] [--json]
- *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
+ *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--compositor auto|gpu|cpu] [--json]
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
  *   open-cut subtitles <film.mjs|film.ts> --out file.srt [--format srt|vtt] [--max-cps n] [--json]
@@ -37,6 +37,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { resolveCompositor } from './compositor.js';
 import { Film, toWire } from './dsl.js';
 import { native } from './native.js';
 import { nativeBuild, nativeVersion, inspectDelivery, verifyRender } from './index.js';
@@ -56,6 +57,15 @@ function flag(args: string[], name: string): string | undefined {
         fail(`${name} requires a value`, 2);
     }
     return value;
+}
+
+function compositorOption(args: string[]) {
+    try {
+        return resolveCompositor(flag(args, '--compositor'), '--compositor');
+    }
+    catch (error) {
+        fail(error instanceof Error ? error.message : String(error), 2);
+    }
 }
 
 /** Resolves the staged VMZ workbench directory.
@@ -1105,6 +1115,7 @@ if (command === 'verify') {
     if (!script) {
         fail('verify requires a film script path', 2);
     }
+    const compositor = compositorOption(args);
     const outArg = flag(args, '--out');
     if (outArg === undefined) {
         fail('verify requires --out <file.mp4>', 2);
@@ -1125,7 +1136,7 @@ if (command === 'verify') {
             : undefined;
     const stats = (() => {
         try {
-            return film.render(path.resolve(outArg), range);
+            return film.render(path.resolve(outArg), { ...range, compositor });
         }
         catch (error) {
             fail(error instanceof Error ? error.message : String(error), 1);
@@ -1152,6 +1163,7 @@ const script = args[1];
 if (!script) {
     fail('render requires a film script path', 2);
 }
+const compositor = compositorOption(args);
 const out = path.resolve(flag(args, '--out') ?? path.join(path.dirname(path.resolve(script)), 'film.mp4'));
 
 const module = await import(pathToFileURL(path.resolve(script)).href);
@@ -1198,19 +1210,13 @@ if (loudnessTargetLufs !== undefined && (!Number.isFinite(loudnessTargetLufs) ||
     fail(`--lufs must be a negative LUFS target, got ${lufsArg}`, 2);
 }
 
-const compositorArg = flag(args, '--compositor');
-if (compositorArg !== undefined && compositorArg !== 'auto' && compositorArg !== 'gpu' && compositorArg !== 'cpu') {
-    fail(`--compositor must be auto, gpu or cpu, got ${compositorArg}`, 2);
-}
-const compositor = compositorArg as 'auto' | 'gpu' | 'cpu' | undefined;
-
 const stats = (() => {
     try {
         if (args.includes('--burn')) {
             if (from !== undefined || sceneId !== undefined) {
                 fail('--burn renders the whole film and cannot be combined with --from/--to/--scene', 2);
             }
-            return film.renderWithSubtitles(out);
+            return film.renderWithSubtitles(out, { compositor });
         }
         return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec, limiterCeilingDb, loudnessTargetLufs, compositor });
     }
@@ -1229,6 +1235,7 @@ console.log(
         `[${stats.backend}, ${Math.round(stats.bytes / 1024)} KiB, project ${stats.projectHash}]`,
 );
 console.log(`fonts: ${stats.fonts.join(', ')}`);
+console.log(`compositor: ${stats.compositor}`);
 console.log(`assets: ${stats.assets.length} fingerprinted`);
 if (stats.audioLevel) {
     console.log(

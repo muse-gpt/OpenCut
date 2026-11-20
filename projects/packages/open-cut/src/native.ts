@@ -118,8 +118,8 @@ export interface RenderOptions {
     limiterCeilingDb?: number;
     /** Integrated loudness target in LUFS for the mixed bed. */
     loudnessTargetLufs?: number;
-    /** Compositor backend (ADR 0005). Omitted means `auto`: prefer GPU and
-     *  report any CPU degradation; `gpu` fails when no adapter exists. */
+    /** Export compositor policy. The authoring API falls back to
+     *  `OPENCUT_COMPOSITOR`, then `auto`. `gpu` requires an adapter. */
     compositor?: 'auto' | 'gpu' | 'cpu';
 }
 
@@ -396,7 +396,7 @@ export interface NativeBinding {
         expectedHeight?: number;
     }): DeliveryReport;
     checkArchive(options: { root: string; production: string }): ArchiveReport;
-    renderWithSubtitles(options: { project: string; production: string; out: string } & SubtitleStyle): RenderResult;
+    renderWithSubtitles(options: { project: string; production: string; out: string } & SubtitleStyle & Pick<RenderOptions, 'compositor'>): RenderResult;
 }
 
 const PLATFORM_KEY = `${process.platform}-${process.arch}`;

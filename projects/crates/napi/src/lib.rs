@@ -35,8 +35,7 @@ fn build(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
-/// GPU compositor facts (ADR 0005): adapter availability, the preference
-/// `MEDIA_COMPOSITOR` resolves to and the adapter identity.
+/// GPU adapter availability and identity, independent of export options.
 #[function(js_name = "gpuStatus")]
 fn gpu_status(ctx: CallContext) -> Result<JsValue> {
     let info = media::gpu::probe_gpu();
@@ -450,7 +449,13 @@ fn render_with_subtitles(ctx: CallContext) -> Result<JsValue> {
     }
     let burned: Vec<media::render::BurnInCue> =
         cues.iter().map(|cue| media::render::BurnInCue { range: [cue.start, cue.end], lines: cue.lines.clone() }).collect();
-    let options = media::render::RenderOptions { subtitles: Some(&burned), audio_codec: audio_codec.as_deref(), ..Default::default() };
+    let compositor = optional_string(arg, "compositor")?;
+    let options = media::render::RenderOptions {
+        subtitles: Some(&burned),
+        audio_codec: audio_codec.as_deref(),
+        compositor: compositor.as_deref(),
+        ..Default::default()
+    };
     let stats = media::render::render_project_with(&project_json, std::path::Path::new(&out), &options, &mut |_, _| {})
         .map_err(core_error)?;
     json_to_js(ctx.env(), &to_json(&stats))

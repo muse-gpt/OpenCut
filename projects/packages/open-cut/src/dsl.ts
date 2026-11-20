@@ -4,6 +4,7 @@
  * the Rust core through N-API. Timeline is data; the finished file is the
  * compiled artifact.
  */
+import { resolveCompositor } from './compositor.js';
 import { native } from './native.js';
 import type {
     ArchiveReport,
@@ -812,12 +813,13 @@ export class Film {
      *  The lines come from the same resolver and wrapper the subtitle exporter
      *  uses, so the burned words and the SRT/VTT cannot drift. An unreadable
      *  cue throws before any frame is written. */
-    renderWithSubtitles(outPath: string, style: SubtitleStyle = {}): RenderResult {
+    renderWithSubtitles(outPath: string, style: SubtitleStyle & Pick<RenderOptions, 'compositor'> = {}): RenderResult {
         return native.renderWithSubtitles({
             project: JSON.stringify(toWire(this.toProject())),
             production: JSON.stringify(toWire(this.toProduction())),
             out: outPath,
             ...style,
+            compositor: resolveCompositor(style.compositor),
         });
     }
 
@@ -861,7 +863,7 @@ export class Film {
             audioCodec: options.audioCodec,
             limiterCeilingDb: options.limiterCeilingDb,
             loudnessTargetLufs: options.loudnessTargetLufs,
-            compositor: options.compositor,
+            compositor: resolveCompositor(options.compositor),
         });
     }
 }
