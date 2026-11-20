@@ -12,6 +12,6 @@ description = "Node-API surface for OpenCut"
 crate-type = ["cdylib"]
 
 [dependencies]
-media = { workspace = true }
+media = { workspace = true, features = ["gpu-wgsl"] }
 serde_json = { workspace = true }
 wae = { workspace = true }

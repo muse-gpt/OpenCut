@@ -365,6 +365,8 @@ export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
     gpuStatus(): GpuStatus;
+    /** WGSL bundles for the GPU compositor operators, as a JSON string. */
+    gpuShaderBundles(): string;
     renderProject(options: { project: string; out: string } & RenderOptions): RenderResult;
     previewRange(options: { project: string; out: string } & PreviewRangeOptions): RenderResult;
     openGui(options: GuiOpenOptions): { opened: boolean; reason?: string; title?: string };

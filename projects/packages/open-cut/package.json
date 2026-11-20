@@ -17,6 +17,7 @@
     },
     "files": [
         "dist",
+        "src/generated",
         "README.md"
     ],
     "scripts": {

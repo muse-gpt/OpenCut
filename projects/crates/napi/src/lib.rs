@@ -59,6 +59,65 @@ fn gpu_status(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// WGSL bundles for every GPU compositor operator, with their binding
+/// manifests, as a JSON string.
+///
+/// Returns an array of `{ name, wgsl, manifest }`. `wgsl` is the compute
+/// source the Web/WASM path dispatches; `manifest` is the binding contract
+/// (`abi_version`, `workgroup`, `bindings`, `min_binding_sizes`,
+/// `field_offsets`, `param_bytes`, `program_hash`). The bundles are emitted
+/// from the same UCF kernels the D3D12 compositor dispatches, so a host can
+/// check the two paths agree without re-deriving the shaders.
+#[function(js_name = "gpuShaderBundles")]
+fn gpu_shader_bundles(ctx: CallContext) -> Result<JsValue> {
+    let bundles = media::shader_bundles().map_err(|error| Error::new(format!("shader_bundles: {error}")))?;
+    let bundles: Vec<serde_json::Value> = bundles
+        .iter()
+        .map(|bundle| {
+            let manifest = &bundle.manifest;
+            json!({
+                "name": bundle.name,
+                "wgsl": bundle.wgsl,
+                "manifest": {
+                    "abi_version": manifest.abi_version,
+                    "workgroup": manifest.workgroup,
+                    "bindings": manifest
+                        .bindings
+                        .iter()
+                        .map(|binding| json!({
+                            "resource": binding.resource,
+                            "class": binding.class,
+                            "index": binding.index,
+                        }))
+                        .collect::<Vec<_>>(),
+                    "min_binding_sizes": manifest
+                        .min_binding_sizes
+                        .iter()
+                        .map(|size| json!({
+                            "resource": size.resource,
+                            "element_bytes": size.element_bytes,
+                            "min_elements_static": size.min_elements_static,
+                            "count_dependent": size.count_dependent,
+                        }))
+                        .collect::<Vec<_>>(),
+                    "field_offsets": manifest
+                        .field_offsets
+                        .iter()
+                        .map(|field| json!({
+                            "name": field.name,
+                            "byte_offset": field.byte_offset,
+                        }))
+                        .collect::<Vec<_>>(),
+                    "param_bytes": manifest.param_bytes,
+                    "program_hash": manifest.program_hash,
+                },
+            })
+        })
+        .collect();
+    let text = serde_json::to_string(&bundles).map_err(|error| Error::new(format!("encode shader bundles: {error}")))?;
+    ctx.env().string(&text)
+}
+
 /// Render a project JSON string into an MP4 file.
 ///
 /// Argument: `{ project, out, startFrame?, endFrame?, cancelFile?, audioCodec? }`.
@@ -1190,6 +1249,7 @@ register_module![
     version,
     build,
     gpu_status,
+    gpu_shader_bundles,
     render_project,
     preview_frame,
     validate_production,

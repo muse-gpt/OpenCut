@@ -10,7 +10,7 @@
         "url": "https://github.com/nyar-os/OpenCut.git"
     },
     "scripts": {
-        "build:napi": "node --experimental-strip-types scripts/build-napi.ts",
+        "build:napi": "node --experimental-strip-types scripts/build-napi.ts && node --experimental-strip-types scripts/emit-shaders.ts",
         "build:ts": "pnpm --filter @wae/open-cut run build",
         "build:ui": "pnpm --filter @wae/open-cut-ui run build && pnpm --filter @wae/open-cut-ui run stage",
         "build": "pnpm run build:napi && pnpm run build:ts && pnpm run build:ui",

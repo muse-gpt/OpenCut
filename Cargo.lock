@@ -643,6 +643,7 @@ version = "0.1.0"
 source = "git+https://github.com/oovm/boost.rs.git?rev=7af3058ced9bddb6c7d877993cd8bf78f1875032#7af3058ced9bddb6c7d877993cd8bf78f1875032"
 dependencies = [
  "hardware-backend-dx12",
+ "hardware-emitter",
  "hardware-ir",
  "hardware-program",
  "hardware-scheduler",
