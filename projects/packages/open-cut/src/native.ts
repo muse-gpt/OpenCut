@@ -22,6 +22,9 @@ export interface RenderResult {
     out: string;
     bytes: number;
     backend: string;
+    /** The compositor that painted the frames: `gpu: <adapter> (<backend>)`,
+     *  `cpu`, or `cpu (degraded: <reason>)` when `auto` found no adapter. */
+    compositor: string;
     audio: boolean;
     /** Half-open frame range written, in project frames. */
     range: [number, number];
@@ -115,6 +118,19 @@ export interface RenderOptions {
     limiterCeilingDb?: number;
     /** Integrated loudness target in LUFS for the mixed bed. */
     loudnessTargetLufs?: number;
+    /** Compositor backend (ADR 0005). Omitted means `auto`: prefer GPU and
+     *  report any CPU degradation; `gpu` fails when no adapter exists. */
+    compositor?: 'auto' | 'gpu' | 'cpu';
+}
+
+/** GPU compositor facts from the native probe (ADR 0005). */
+export interface GpuStatus {
+    status: 'available' | 'unavailable' | 'disabled';
+    preferred: 'gpu' | 'cpu';
+    adapterName: string | null;
+    backend: string | null;
+    deviceType: string | null;
+    message: string;
 }
 
 export interface BuildInfo {
@@ -348,6 +364,7 @@ export interface FrameLookup {
 export interface NativeBinding {
     version(): string;
     build(): BuildInfo;
+    gpuStatus(): GpuStatus;
     renderProject(options: { project: string; out: string } & RenderOptions): RenderResult;
     previewRange(options: { project: string; out: string } & PreviewRangeOptions): RenderResult;
     openGui(options: GuiOpenOptions): { opened: boolean; reason?: string; title?: string };

@@ -35,6 +35,31 @@ fn build(ctx: CallContext) -> Result<JsValue> {
     )
 }
 
+/// GPU compositor facts (ADR 0005): adapter availability, the preference
+/// `MEDIA_COMPOSITOR` resolves to and the adapter identity.
+#[function(js_name = "gpuStatus")]
+fn gpu_status(ctx: CallContext) -> Result<JsValue> {
+    let info = media::gpu::probe_gpu();
+    json_to_js(
+        ctx.env(),
+        &json!({
+            "status": match info.status {
+                media::gpu::GpuStatus::Available => "available",
+                media::gpu::GpuStatus::Unavailable => "unavailable",
+                media::gpu::GpuStatus::Disabled => "disabled",
+            },
+            "preferred": match info.preferred {
+                media::gpu::CompositorKind::Gpu => "gpu",
+                media::gpu::CompositorKind::Cpu => "cpu",
+            },
+            "adapterName": info.adapter_name,
+            "backend": info.backend,
+            "deviceType": info.device_type,
+            "message": info.message,
+        }),
+    )
+}
+
 /// Render a project JSON string into an MP4 file.
 ///
 /// Argument: `{ project, out, startFrame?, endFrame?, cancelFile?, audioCodec? }`.
@@ -81,12 +106,14 @@ fn render_project(ctx: CallContext) -> Result<JsValue> {
     }
     let limiter_ceiling_db = optional_f32(arg, "limiterCeilingDb")?;
     let loudness_target_lufs = optional_f32(arg, "loudnessTargetLufs")?;
+    let compositor = optional_string(arg, "compositor")?;
     let options = RenderOptions {
         range,
         cancel: Some(&cancel),
         audio_codec: audio_codec.as_deref(),
         limiter_ceiling_db,
         loudness_target_lufs,
+        compositor: compositor.as_deref(),
         ..Default::default()
     };
     let stats = media::render::render_project_with(&project, path, &options, &mut |done, total| {
@@ -1096,6 +1123,7 @@ fn to_json(stats: &RenderStats) -> serde_json::Value {
         "out": stats.out,
         "bytes": stats.bytes,
         "backend": stats.backend,
+        "compositor": stats.compositor,
         "audio": stats.audio,
         "range": stats.range,
         "fonts": stats.fonts,
@@ -1156,6 +1184,7 @@ fn json_to_js(env: Env, value: &serde_json::Value) -> Result<JsValue> {
 register_module![
     version,
     build,
+    gpu_status,
     render_project,
     preview_frame,
     validate_production,

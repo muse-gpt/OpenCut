@@ -3,7 +3,7 @@
  * OpenCut CLI — compile a film script into an MP4.
  *
  * Usage:
- *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--audio-codec aac|flac] [--limiter-db n] [--burn] [--json]
+ *   open-cut render <film.mjs|film.ts> [--out file.mp4] [--from s] [--to s] [--scene id] [--cancel-file path] [--audio-codec aac|flac] [--limiter-db n] [--compositor auto|gpu|cpu] [--burn] [--json]
  *   open-cut verify <film.mjs|film.ts> --out file.mp4 [--from s] [--to s] [--json]
  *   open-cut validate <film.mjs|film.ts> [--json]
  *   open-cut plan <film.mjs|film.ts> [--json]
@@ -1198,6 +1198,12 @@ if (loudnessTargetLufs !== undefined && (!Number.isFinite(loudnessTargetLufs) ||
     fail(`--lufs must be a negative LUFS target, got ${lufsArg}`, 2);
 }
 
+const compositorArg = flag(args, '--compositor');
+if (compositorArg !== undefined && compositorArg !== 'auto' && compositorArg !== 'gpu' && compositorArg !== 'cpu') {
+    fail(`--compositor must be auto, gpu or cpu, got ${compositorArg}`, 2);
+}
+const compositor = compositorArg as 'auto' | 'gpu' | 'cpu' | undefined;
+
 const stats = (() => {
     try {
         if (args.includes('--burn')) {
@@ -1206,7 +1212,7 @@ const stats = (() => {
             }
             return film.renderWithSubtitles(out);
         }
-        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec, limiterCeilingDb, loudnessTargetLufs });
+        return film.render(out, { startFrame, endFrame, cancelFile: flag(args, '--cancel-file'), audioCodec, limiterCeilingDb, loudnessTargetLufs, compositor });
     }
     catch (error) {
         // The core reports stable codes (`cancelled`, `media`, `invalid_scene`, …);

@@ -861,6 +861,7 @@ export class Film {
             audioCodec: options.audioCodec,
             limiterCeilingDb: options.limiterCeilingDb,
             loudnessTargetLufs: options.loudnessTargetLufs,
+            compositor: options.compositor,
         });
     }
 }
